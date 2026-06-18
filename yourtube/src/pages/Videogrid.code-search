@@ -1,0 +1,18 @@
+# Query: videocard
+# ContextLines: 1
+
+4 results - 2 files
+
+yourtube\src\components\Videocard.tsx:
+  4  
+  5: export default function Videocard({ video }: any) {
+  6    return (
+
+yourtube\src\components\Videogrid.tsx:
+   2  
+   3: import Videocard from "./Videocard";
+   4  
+
+  27        {videos.map((video) => (
+  28:         <Videocard key={video._id} video={video} />
+  29        ))}
