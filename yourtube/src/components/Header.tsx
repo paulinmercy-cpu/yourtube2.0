@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import {
   Menu,
@@ -32,8 +33,10 @@ import {
 
 import { Useuser } from "@/lib/AuthContext";
 
+
 const Header = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const context: any = Useuser();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,13 +142,16 @@ const Header = () => {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/channel/${user?._id}`}
+                <DropdownMenuItem
+                onClick={() => {
+                  const channelUrl = `/channel/${user?._id}`;
+                  if (pathname !== channelUrl) {
+                    router.push(channelUrl);
+                  }
+                  }}
                   >
                     <Tv className="w-4 h-4 mr-2" />
                     Your Channel
-                  </Link>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem

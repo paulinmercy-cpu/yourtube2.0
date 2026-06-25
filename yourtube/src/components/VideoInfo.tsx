@@ -12,6 +12,7 @@ import {
   Clock3,
 } from "lucide-react";
 
+
 const VideoInfo = ({ video }: any) => {
   const [showMore, setShowMore] = useState(false);
 
@@ -55,6 +56,7 @@ const VideoInfo = ({ video }: any) => {
       console.error("LIKE ERROR:", error);
     }
   };
+  
 
   // DISLIKE
   const handleDislike = async () => {
@@ -108,6 +110,47 @@ const VideoInfo = ({ video }: any) => {
       );
     }
   };
+
+  const handleDownload = async (): Promise<void> => {
+  try {
+    const res = await fetch("http://localhost:5000/download", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: "123",
+        videoId: video._id,
+        title: video.videotitle,
+        url: video.filepath,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message);
+      return;
+    }
+
+    const fileUrl = `http://localhost:5000/${data.download.videoUrl.replace(
+      /\\/g,
+      "/"
+    )}`;
+
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.download = video.videotitle || "video.mp4";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    alert("Download started!");
+  } catch (error) {
+    console.error("DOWNLOAD ERROR:", error);
+  }
+};
 
   return (
     <div className="space-y-3">
@@ -183,7 +226,10 @@ const VideoInfo = ({ video }: any) => {
           </button>
 
           {/* DOWNLOAD */}
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm hover:bg-gray-200">
+          <button
+          onClick={handleDownload}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm hover:bg-gray-200"
+          >
             <Download size={16} />
             Download
           </button>

@@ -25,9 +25,10 @@ const Videoplayer = ({ video }: VideoProps) => {
   return (
     <div className="aspect-video bg-black rounded-lg overflow-hidden">
       <video
-        ref={videoRef}
-        className="w-full h-full"
-        controls
+      ref={videoRef}
+      className="w-full h-full"
+      controls
+      preload="metadata"
       >
         <source
           src={videoSrc}

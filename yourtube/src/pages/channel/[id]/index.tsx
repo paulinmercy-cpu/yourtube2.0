@@ -10,24 +10,33 @@ export default function ChannelPage() {
   const [activeTab, setActiveTab] = useState("home");
   const [channel, setChannel] = useState<any>(null);
 
-  const [videos, setVideos] = useState([
-    {
-      _id: "1",
-      videotitle: "The Apothecary Diaries Episode 1",
-      thumbnail: "https://picsum.photos/400/250?random=1",
-      views: 45000,
-      videochannel: "Anime Channel",
-      createdAt: "2025-06-15T00:00:00.000Z",
-    },
-    {
-      _id: "2",
-      videotitle: "Solo Leveling Episode 12",
-      thumbnail: "https://picsum.photos/400/250?random=2",
-      views: 98000,
-      videochannel: "Anime Channel",
-      createdAt: "2025-06-15T00:00:00.000Z",
-    },
-  ]);
+  const [videos, setVideos] = useState<any[]>([]);
+  useEffect(() => {
+  const fetchVideos = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:5000/video"
+      );
+
+      const data = await res.json();
+
+      const myVideos = data.videos.filter(
+        (video: any) =>
+          video.videochannel === "Paulin Mercy"
+      );
+
+      console.log("VIDEOS:", myVideos);
+
+      setVideos(myVideos);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  if (channel) {
+    fetchVideos();
+  }
+}, [channel]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -57,6 +66,11 @@ export default function ChannelPage() {
       </div>
     );
   }
+  const totalViews = videos.reduce(
+  (total, video) =>
+    total + (video.views || 0),
+  0
+);
 
   return (
     <div className="w-full min-h-screen bg-white">
@@ -95,7 +109,11 @@ export default function ChannelPage() {
               </p>
 
               <p className="text-gray-600">
-                {channel.subscribers} subscribers
+                {channel.subscribers} subscribers •
+                {" "}
+                {videos.length} videos •
+                {" "}
+                {totalViews} views
               </p>
 
               <p className="mt-2">
@@ -105,8 +123,8 @@ export default function ChannelPage() {
           </div>
 
           <div className="flex items-center gap-3 mt-4 md:mt-0">
-            <button className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-800">
-              Subscribe
+            <button className="bg-gray-200 px-4 py-2 rounded-full">
+              Edit Channel
             </button>
 
             <button className="w-10 h-10 rounded-full border flex items-center justify-center hover:bg-gray-100">
@@ -119,7 +137,6 @@ export default function ChannelPage() {
           {[
             "home",
             "videos",
-            "shorts",
             "playlists",
             "community",
             "about",

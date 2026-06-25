@@ -10,6 +10,8 @@ import userroutes from "./routes/auth.js";
 import videoroutes from "./routes/video.js";
 import likeroutes from "./routes/like.js";
 import commentroutes from "./routes/comment.js";
+import translateroutes from "./routes/translate.js";
+import downloadRoutes from "./routes/download.js";
 
 dotenv.config();
 
@@ -29,6 +31,8 @@ app.use("/user", userroutes);
 app.use("/video", videoroutes);
 app.use("/like", likeroutes);
 app.use("/comment", commentroutes);
+app.use("/translate", translateroutes);
+app.use("/download", downloadRoutes);
 
 // TEST ROUTE
 app.get("/", (req, res) => {

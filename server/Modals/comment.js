@@ -20,16 +20,24 @@ const commentSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Task 1 - User City
+    city: {
+      type: String,
+      default: "Unknown",
+    },
+
     commentedon: {
       type: Date,
       default: Date.now,
     },
 
+    // Task 1 - Like Count
     likes: {
       type: Number,
       default: 0,
     },
 
+    // Task 1 - Dislike Count
     dislikes: {
       type: Number,
       default: 0,

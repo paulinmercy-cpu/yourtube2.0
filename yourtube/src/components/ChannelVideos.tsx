@@ -1,10 +1,14 @@
 "use client";
 
+import Link from "next/link";
+
 interface Video {
   _id: string;
   videotitle: string;
-  thumbnail: string;
+  thumbnail?: string;
+  filename?:string;
   views: number;
+  videochannel?: string;
 }
 
 interface ChannelVideosProps {
@@ -27,30 +31,39 @@ const ChannelVideos = ({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {videos.map((video) => (
-            <div
+            <Link
+              href={`/watch/${video._id}`}
               key={video._id}
-              className="bg-white rounded-xl overflow-hidden shadow border hover:shadow-lg transition"
             >
-              <img
-                src={video.thumbnail}
-                alt={video.videotitle}
+              <div className="bg-white rounded-xl overflow-hidden shadow border hover:shadow-lg transition cursor-pointer">
+                <video
+                src={`http://localhost:5000/uploads/${video.filename}`}
                 className="w-full h-48 object-cover"
-              />
+                muted
+                preload="metadata"
+                playsInline
+                onMouseOver={(e) => e.currentTarget.play()}
+                onMouseOut={(e) => {
+                  e.currentTarget.pause();
+                  e.currentTarget.currentTime = 0;
+                  }}
+                  />
 
-              <div className="p-4">
-                <h3 className="font-semibold text-lg line-clamp-2">
-                  {video.videotitle}
-                </h3>
+                <div className="p-4">
+                  <h3 className="font-semibold text-lg line-clamp-2">
+                    {video.videotitle}
+                  </h3>
 
-                <p className="text-gray-500 text-sm mt-2">
-                  {video.views.toLocaleString()} views
-                </p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    {video.views?.toLocaleString() || 0} views
+                  </p>
 
-                <p className="text-gray-400 text-xs mt-1">
-                  Anime Channel
-                </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {video.videochannel || "Paulin Mercy"}
+                  </p>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

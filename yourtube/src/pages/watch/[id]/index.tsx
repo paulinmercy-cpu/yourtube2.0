@@ -1,61 +1,68 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import Comments from "@/components/Comments";
 import RelatedVideos from "@/components/RelatedVideos";
 import VideoInfo from "@/components/VideoInfo";
 import Videoplayer from "@/components/Videopplayer";
+import axiosInstance from "@/lib/axiosinstance";
 
 export default function WatchVideo() {
-  const params = useParams();
-  const id = params?.id as string;
+  const router = useRouter();
+  const { id } = router.query;
 
   const [video, setVideo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
+  if (!id) return;
 
-    const fetchVideo = async () => {
-      try {
-        setLoading(true);
+  const fetchVideo = async () => {
+    try {
+      setLoading(true);
 
-        // ✅ Add view
-        await fetch(`http://localhost:5000/video/${id}/view`, {
-          method: "PUT",
-        });
+      await fetch(`http://localhost:5000/video/${id}/view`, {
+        method: "PUT",
+      });
 
-        // ✅ Get video (IMPORTANT FIX HERE)
-        const response = await fetch(
-          `http://localhost:5000/video/${id}`
-        );
+      const response = await fetch(
+        `http://localhost:5000/video/${id}`
+      );
 
-        const data = await response.json();
+      const data = await response.json();
+      
 
-        console.log("VIDEO DATA:", data);
+      
+      console.log("VIDEO DATA:", data);
+      console.log("FILENAME:", data.filename);
+      console.log("FILEPATH:", data.filepath);
 
-        // ✅ FIX: your backend returns DIRECT object
-        setVideo(data);
-
-      } catch (error) {
-        console.error("FETCH ERROR:", error);
-        setVideo(null);
-      } finally {
-        setLoading(false);
+      if (data.success) {
+        setVideo(data.video);
       }
-    };
+    } catch (error) {
+      console.error("FETCH ERROR:", error);
+      setVideo(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchVideo();
-  }, [id]);
+  fetchVideo();
+}, [id]);
 
   if (loading) {
     return <div className="p-6 text-center">Loading...</div>;
   }
 
   if (!video) {
-    return <div className="p-6 text-center">Video not found</div>;
+  return (
+    <div className="p-6 text-center">
+      Video not found
+    </div>
+    );
   }
 
   return (

@@ -3,12 +3,28 @@ import Comment from "../Modals/comment.js";
 // ADD COMMENT
 export const addComment = async (req, res) => {
   try {
-    const { videoId, username, text } = req.body;
+    const { videoId, username, text, city } =
+      req.body;
+
+    // Block special characters
+    const specialCharRegex =
+      /[^a-zA-Z0-9\s]/;
+
+    if (specialCharRegex.test(text)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Special characters are not allowed",
+      });
+    }
 
     const comment = await Comment.create({
       videoId,
       usercommented: username,
       commentbody: text,
+      city,
+      likes: 0,
+      dislikes: 0,
     });
 
     res.status(201).json({
@@ -26,7 +42,10 @@ export const addComment = async (req, res) => {
 };
 
 // GET COMMENTS
-export const getComments = async (req, res) => {
+export const getComments = async (
+  req,
+  res
+) => {
   try {
     const comments = await Comment.find({
       videoId: req.params.videoId,
@@ -52,8 +71,12 @@ export const editComment = async (req, res) => {
     const updatedComment =
       await Comment.findByIdAndUpdate(
         req.params.id,
-        { commentbody },
-        { new: true }
+        {
+          commentbody,
+        },
+        {
+          new: true,
+        }
       );
 
     res.json({
@@ -68,8 +91,92 @@ export const editComment = async (req, res) => {
   }
 };
 
+// LIKE COMMENT
+export const likeComment = async (
+  req,
+  res
+) => {
+  try {
+    const comment =
+      await Comment.findById(
+        req.params.id
+      );
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    comment.likes += 1;
+
+    await comment.save();
+
+    res.json({
+      success: true,
+      likes: comment.likes,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// DISLIKE COMMENT
+export const dislikeComment = async (
+  req,
+  res
+) => {
+  try {
+    const comment =
+      await Comment.findById(
+        req.params.id
+      );
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    comment.dislikes += 1;
+
+    // Auto delete after 2 dislikes
+    if (comment.dislikes >= 2) {
+      await Comment.findByIdAndDelete(
+        comment._id
+      );
+
+      return res.json({
+        success: true,
+        message:
+          "Comment removed after 2 dislikes",
+      });
+    }
+
+    await comment.save();
+
+    res.json({
+      success: true,
+      dislikes: comment.dislikes,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // DELETE COMMENT
-export const deleteComment = async (req, res) => {
+export const deleteComment = async (
+  req,
+  res
+) => {
   try {
     await Comment.findByIdAndDelete(
       req.params.id

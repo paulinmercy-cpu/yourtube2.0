@@ -8,16 +8,25 @@ interface Comment {
   videoId: string;
   username: string;
   text: string;
+  city?: string;
+  likes?: number;
+  dislikes?: number;
 }
 
 const Comments = ({ videoId }: { videoId: string }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [city, setCity] = useState("Unknown");
 
   // ✅ EDIT STATES
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState("");
+  const [translatedComments, setTranslatedComments] =
+  useState<{ [key: string]: string }>({});
+
+  const [targetLanguage, setTargetLanguage] =
+  useState("en");
 
   const user = {
     name: "Paulin Mercy",
@@ -34,6 +43,9 @@ const Comments = ({ videoId }: { videoId: string }) => {
           videoId: c.videoId,
           username: c.username || c.usercommented || "User",
           text: c.text || c.commentbody || "",
+          city: c.city || "Unknown",
+          likes: c.likes || 0,
+          dislikes: c.dislikes || 0,
         }));
 
         setComments(normalized);
@@ -48,11 +60,41 @@ const Comments = ({ videoId }: { videoId: string }) => {
       loadComments();
     }
   }, [videoId]);
+  useEffect(() => {
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+        );
+
+        const data = await res.json();
+
+        setCity(
+          data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            "Unknown"
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  );
+}, []);
 
   // ✅ ADD COMMENT
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+  if (!newComment.trim()) return;
 
+  const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+  
+  if (specialCharRegex.test(newComment)) {
+    alert("Special characters are not allowed");
+    return;
+  }
     try {
       setIsSubmitting(true);
 
@@ -60,6 +102,7 @@ const Comments = ({ videoId }: { videoId: string }) => {
         videoId,
         username: user.name,
         text: newComment,
+        city,
       });
 
       if (res.data.success) {
@@ -71,6 +114,9 @@ const Comments = ({ videoId }: { videoId: string }) => {
           username:
             newC.username || newC.usercommented || "User",
           text: newC.text || newC.commentbody || "",
+          city: newC.city || city,
+          likes: newC.likes || 0,
+          dislikes: newC.dislikes || 0,
         };
 
         setComments((prev) => [normalizedComment, ...prev]);
@@ -82,6 +128,22 @@ const Comments = ({ videoId }: { videoId: string }) => {
       setIsSubmitting(false);
     }
   };
+  const handleLike = async (id: string) => {
+  try {
+    await axiosInstance.put(`/comment/like/${id}`);
+    loadComments();
+  } catch (error) {
+    console.log(error);
+  }
+};
+  const handleDislike = async (id: string) => {
+  try {
+    await axiosInstance.put(`/comment/dislike/${id}`);
+    loadComments();
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   // ✅ DELETE COMMENT
   const handleDelete = async (id: string) => {
@@ -106,11 +168,12 @@ const Comments = ({ videoId }: { videoId: string }) => {
 
   // ✅ SAVE EDIT
   const handleSaveEdit = async (id: string) => {
+    
     if (!editedText.trim()) return;
 
     try {
       const res = await axiosInstance.put(`/comment/edit/${id}`, {
-        text: editedText,
+        commentbody: editedText,
       });
 
       if (res.data.success) {
@@ -127,6 +190,29 @@ const Comments = ({ videoId }: { videoId: string }) => {
       console.log("EDIT ERROR:", error);
     }
   };
+  const handleTranslate = async (
+  id: string,
+  text: string
+) => {
+  try {
+    const res = await axiosInstance.post(
+      "http://localhost:5000/translate",
+      {
+        text,
+        targetLanguage,
+      }
+    );
+
+    if (res.data.success) {
+      setTranslatedComments((prev) => ({
+        ...prev,
+        [id]: res.data.translatedText,
+      }));
+    }
+  } catch (error) {
+    console.log("TRANSLATE ERROR:", error);
+  }
+};
 
   return (
     <div className="mt-6">
@@ -162,85 +248,142 @@ const Comments = ({ videoId }: { videoId: string }) => {
       </div>
 
       {/* COMMENTS LIST */}
-      <div className="space-y-6">
-        {comments.map((comment) => {
-          const username = comment.username || "User";
-          const text = comment.text || "";
+      <div className="mb-4">
+        <label className="mr-2">
+          Translate To:
+          </label>
+          <select
+          value={targetLanguage}
+          onChange={(e) =>
+            setTargetLanguage(e.target.value)
+          }
+          className="border rounded px-2 py-1"
+          >
+            <option value="en">English</option>
+            <option value="ta">Tamil</option>
+            <option value="hi">Hindi</option>
+            <option value="fr">French</option>
+            <option value="es">Spanish</option>
+            <option value="ja">Japanese</option>
+            </select>
+            </div>
+            <div className="space-y-6">
+              {comments.map((comment) => {
+                const username = comment.username || "User";
+                const text = comment.text || "";
 
-          return (
-            <div key={comment._id} className="flex gap-3">
-              {/* ✅ SAFE AVATAR LETTER */}
-              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-semibold">
-                {username.charAt(0)}
-              </div>
+    return (
+      <div key={comment._id} className="flex gap-3">
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-semibold">
+          {username.charAt(0)}
+        </div>
 
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold">{username}</h4>
-                  <span className="text-sm text-gray-500">
-                    Just now
-                  </span>
-                </div>
+        {/* Comment Content */}
+        <div className="flex-1">
+          <div>
+            <h4 className="font-semibold">{username}</h4>
 
-                {/* ✅ EDIT MODE */}
-                {editingId === comment._id ? (
-                  <div className="mt-2">
-                    <input
-                      value={editedText}
-                      onChange={(e) =>
-                        setEditedText(e.target.value)
-                      }
-                      className="border p-2 w-full"
-                    />
+            <span className="text-xs text-gray-500">
+              {comment.city}
+            </span>
+          </div>
 
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() =>
-                          handleSaveEdit(comment._id)
-                        }
-                        className="text-green-600 text-sm"
-                      >
-                        Save
-                      </button>
+          {/* Edit Mode */}
+          {editingId === comment._id ? (
+            <div className="mt-2">
+              <input
+                value={editedText}
+                onChange={(e) =>
+                  setEditedText(e.target.value)
+                }
+                className="border p-2 w-full rounded"
+              />
 
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="text-gray-500 text-sm"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-800 mt-1">{text}</p>
-                )}
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() =>
+                    handleSaveEdit(comment._id)
+                  }
+                  className="text-green-600 text-sm"
+                >
+                  Save
+                </button>
 
-                {/* ACTIONS */}
-                <div className="flex gap-4 mt-2">
-                  <button
-                    onClick={() =>
-                      handleEdit(comment._id, text)
-                    }
-                    className="text-sm text-blue-600"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      handleDelete(comment._id)
-                    }
-                    className="text-sm text-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
+                <button
+                  onClick={() => setEditingId(null)}
+                  className="text-gray-500 text-sm"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-          );
-        })}
+          ) : (
+          <>
+          <p className="text-gray-800 mt-1">
+            {text}
+            </p>
+            {translatedComments[comment._id] && (
+              <p className="text-blue-600 text-sm mt-2">
+                Translation:{" "}
+                {translatedComments[comment._id]}
+                </p>
+              )}
+              </>
+            )}
+
+          {/* Actions */}
+          <div className="space-y-6">
+          <div className="flex gap-4 mt-2">
+            <button
+              onClick={() => handleLike(comment._id)}
+              className="text-sm"
+            >
+              👍 {comment.likes}
+            </button>
+
+            <button
+              onClick={() =>
+                handleDislike(comment._id)
+              }
+              className="text-sm"
+            >
+              👎 {comment.dislikes}
+            </button>
+
+            <button
+              onClick={() =>
+                handleEdit(comment._id, text)
+              }
+              className="text-sm text-blue-600"
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() =>
+                handleDelete(comment._id)
+              }
+              className="text-sm text-red-600"
+            >
+              Delete
+            </button>
+            <button
+            onClick={() =>
+              handleTranslate(comment._id, text)
+            }
+            className="text-sm text-green-600"
+            >
+              Translate
+              </button>
+                </div>
+            </div>
+        </div>
       </div>
-    </div>
+    );
+  })}
+  </div>
+  </div>
   );
 };
 
