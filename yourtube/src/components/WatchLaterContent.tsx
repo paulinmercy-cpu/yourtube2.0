@@ -7,14 +7,15 @@ import { useEffect, useState } from "react";
 
 interface WatchLaterItem {
   _id: string;
-  addedAt: Date;
-  video: {
+  createdAt: string;
+  videoId: {
     _id: string;
     videotitle: string;
     videochannel: string;
     views: number;
-    createdAt: Date;
+    createdAt: string;
     filepath: string;
+    thumbnail?: string;
   };
 }
 
@@ -22,115 +23,131 @@ export default function WatchLaterContent() {
   const [watchLater, setWatchLater] = useState<WatchLaterItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const user = {
-    id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-  };
-
   useEffect(() => {
-    if (user) {
-      loadWatchLater();
-    }
+    loadWatchLater();
   }, []);
 
   const loadWatchLater = async () => {
     try {
-      const data: WatchLaterItem[] = [
-        {
-          _id: "1",
-          addedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          video: {
-            _id: "1",
-            videotitle: "The Apothecary Diaries",
-            videochannel: "Tamil Anime",
-            views: 50000,
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-            filepath: "/video/The Apothecary Diaries.mp4",
-          },
-        },
-        {
-          _id: "2",
-          addedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          video: {
-            _id: "2",
-            videotitle: "The Apothecary Diaries",
-            videochannel: "Tamil Anime",
-            views: 50000,
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-            filepath: "/video/The Apothecary Diaries.mp4",
-          },
-        },
-      ];
+      const user = JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
 
-      setWatchLater(data);
+      if (!user?._id) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:5000/watchlater/${user._id}`
+      );
+
+      const data = await response.json();
+
+      console.log("Watch Later:", data);
+
+      if (data.success) {
+        setWatchLater(data.videos);
+      } else {
+        setWatchLater([]);
+      }
     } catch (error) {
-      console.error("Error loading watch later:", error);
+      console.error(error);
+      setWatchLater([]);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-[500px]">
+        <h2 className="text-xl">Loading...</h2>
+      </div>
+    );
   }
 
   return (
-    <div className="px-6 py-6">
-      <h1 className="text-4xl font-bold mb-8">Watch later</h1>
+    <div className="w-full px-8 py-6">
+      <h1 className="text-3xl font-bold">
+        Watch Later
+      </h1>
 
-      <div className="flex justify-between items-center mb-6">
-        <p className="text-gray-600">
-          {watchLater.length} videos
+      <div className="flex justify-between items-center mt-2 mb-8">
+        <p className="text-gray-500">
+          {watchLater.length} Videos
         </p>
 
-        <button className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-xl">
+        <button className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg">
           <Play size={16} />
-          Play all
+          Play All
         </button>
       </div>
 
-      <div className="space-y-4">
-        {watchLater.map((item) => (
-          <div
-            key={item._id}
-            className="flex items-start gap-3 group"
-          >
-            <Link href={`/watch/${item.video._id}`}>
-              <video
-                src={item.video.filepath}
-                className="w-[140px] h-[80px] rounded object-cover"
-                muted
-              />
-            </Link>
+      {watchLater.length === 0 ? (
+        <div className="text-center mt-24">
+          <h2 className="text-2xl font-semibold">
+            No videos saved
+          </h2>
 
-            <div className="flex-1">
-              <Link href={`/watch/${item.video._id}`}>
-                <h3 className="text-[15px] font-medium hover:text-blue-600">
-                  {item.video.videotitle}
-                </h3>
+          <p className="text-gray-500 mt-2">
+            Save videos to watch them later.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {watchLater.map((item) => (
+            <div
+              key={item._id}
+              className="flex gap-4 p-3 rounded-xl hover:bg-gray-100 transition"
+            >
+              <Link href={`/watch/${item.videoId._id}`}>
+                <img
+  src={
+    item.videoId.thumbnail
+      ? `http://localhost:5000/uploads/${item.videoId.thumbnail}`
+      : "/thumbnail.jpg"
+  }
+  className="w-[220px] h-[130px] rounded-xl object-cover"
+  alt={item.videoId.videotitle}
+/>
               </Link>
 
-              <p className="text-sm text-gray-600">
-                {item.video.videochannel}
-              </p>
+              <div className="flex-1">
+                <Link href={`/watch/${item.videoId._id}`}>
+                  <h2 className="text-lg font-semibold hover:text-blue-600">
+                    {item.videoId.videotitle}
+                  </h2>
+                </Link>
 
-              <p className="text-sm text-gray-600">
-                {item.video.views.toLocaleString()} views •{" "}
-                {formatDistanceToNow(item.video.createdAt)} ago
-              </p>
+                <p className="text-gray-600 mt-1">
+                  {item.videoId.videochannel}
+                </p>
 
-              <p className="text-xs text-gray-500 mt-1">
-                Added {formatDistanceToNow(item.addedAt)} ago
-              </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {item.videoId.views.toLocaleString()} views •{" "}
+                  {formatDistanceToNow(
+                    new Date(item.videoId.createdAt)
+                  )}{" "}
+                  ago
+                </p>
+
+                <p className="text-xs text-gray-400 mt-2">
+                  Added{" "}
+                  {formatDistanceToNow(
+                    new Date(item.createdAt)
+                  )}{" "}
+                  ago
+                </p>
+              </div>
+
+              <button className="p-2 rounded-full hover:bg-gray-200">
+                <MoreVertical size={20} />
+              </button>
             </div>
-
-            <button className="p-1 hover:bg-gray-100 rounded-full">
-              <MoreVertical size={18} />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

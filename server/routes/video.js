@@ -13,16 +13,14 @@ import {
 
 const router = express.Router();
 
+// Multer Storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
   },
 
   filename: (req, file, cb) => {
-    cb(
-      null,
-      Date.now() + "-" + file.originalname
-    );
+    cb(null, Date.now() + "-" + file.originalname);
   },
 });
 
@@ -30,22 +28,34 @@ const upload = multer({
   storage,
 });
 
+// ================= Upload Video =================
 router.post(
   "/upload",
-  upload.single("video"),
+  upload.fields([
+    {
+      name: "video",
+      maxCount: 1,
+    },
+  ]),
   uploadVideo
 );
 
+// ================= Get All Videos =================
 router.get("/", getVideos);
 
-// GET VIDEO BY ID
+// ================= Get Single Video =================
 router.get("/:id", getVideoById);
 
-
+// ================= Like =================
 router.put("/:id/like", likeVideo);
-router.put("/:id/dislike", dislikeVideo);
-router.put("/:id/view", addView);
-router.put("/:id/watchlater", addWatchLater);
 
+// ================= Dislike =================
+router.put("/:id/dislike", dislikeVideo);
+
+// ================= View =================
+router.put("/:id/view", addView);
+
+// ================= Watch Later =================
+router.put("/:id/watchlater", addWatchLater);
 
 export default router;

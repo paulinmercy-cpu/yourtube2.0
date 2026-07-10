@@ -13,11 +13,15 @@ import {
 } from "lucide-react";
 
 
+
 const VideoInfo = ({ video }: any) => {
+
+  const [showPremiumPopup, setShowPremiumPopup] = useState(false);
   const [showMore, setShowMore] = useState(false);
 
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
+  const [downloadBlocked, setDownloadBlocked] = useState(false);
 
   const [likes, setLikes] = useState(
     video?.likes || 0
@@ -31,31 +35,53 @@ const VideoInfo = ({ video }: any) => {
     useState(false);
 
   const [watchLaterCount, setWatchLaterCount] =
-    useState(video?.watchLater || 0);
+  useState(video?.watchLater || 0);
+  
 
   // LIKE
   const handleLike = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:5000/video/${video._id}/like`,
-        {
-          method: "PUT",
-        }
-      );
+  try {
+    const user = JSON.parse(
+      localStorage.getItem("user") || "{}"
+    );
 
-      const data = await res.json();
-
-      if (data.success) {
-        setLikes(data.video.likes);
-        setDislikes(data.video.dislikes);
-
-        setLiked(true);
-        setDisliked(false);
-      }
-    } catch (error) {
-      console.error("LIKE ERROR:", error);
+    if (!user?._id) {
+      alert("Please login first");
+      return;
     }
-  };
+
+    const res = await fetch(
+      `http://localhost:5000/like/like/${video._id}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user._id,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+console.log("Status:", res.status);
+console.log("Response:", data);
+
+if (data.success) {
+  setLiked(data.liked);
+  setLikes(data.likes);
+
+  if (data.liked) {
+    setDisliked(false);
+  }
+} else {
+  alert(data.message);
+}
+  } catch (error) {
+    console.error(error);
+  }
+};
   
 
   // DISLIKE
@@ -87,66 +113,97 @@ const VideoInfo = ({ video }: any) => {
 
   // WATCH LATER
   const handleWatchLater = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:5000/video/${video._id}/watchlater`,
-        {
-          method: "PUT",
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        setWatchLater(true);
-        setWatchLaterCount(
-          data.video.watchLater
-        );
-      }
-    } catch (error) {
-      console.error(
-        "WATCH LATER ERROR:",
-        error
-      );
-    }
-  };
-
-  const handleDownload = async (): Promise<void> => {
   try {
+    const user = JSON.parse(
+      localStorage.getItem("user") || "{}"
+    );
+
+    if (!user?._id) {
+      alert("Please login first");
+      return;
+    }
+
+    const res = await fetch(
+      `http://localhost:5000/watchlater/${video._id}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user._id,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setWatchLater(data.saved);
+      setWatchLaterCount(data.watchLater);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+  const handleDownload = async () => {
+  try {
+    const storedUser = localStorage.getItem("user");
+
+    console.log("LOCAL USER:", storedUser);
+
+    const currentUser = storedUser
+      ? JSON.parse(storedUser)
+      : null;
+
+    console.log("CURRENT USER:", currentUser);
+
+    console.log("VIDEO OBJECT:", video);
+    console.log("VIDEO FILENAME:", video?.filename);
+    console.log("VIDEO:", video);
+    console.log("LOCAL USER:", localStorage.getItem("user"));
+    console.log("Thumbnail:", video?.thumbnail);
+    console.log("Channel:", video?.videochannel);
+
+    
+
+
     const res = await fetch("http://localhost:5000/download", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userId: "123",
-        videoId: video._id,
-        title: video.videotitle,
-        url: video.filepath,
-      }),
+  userId: currentUser?._id,
+  videoId: video?._id,
+  title: video?.videotitle,
+  url: video?.filename,
+  thumbnail: video?.thumbnail,
+  channelName: video?.videochannel,
+  isPremium: false,
+}),
     });
 
     const data = await res.json();
 
     if (!data.success) {
-      alert(data.message);
+      setShowPremiumPopup(true);
+      setTimeout(() => {
+        setShowPremiumPopup(false);
+      }, 3000);
       return;
     }
 
-    const fileUrl = `http://localhost:5000/${data.download.videoUrl.replace(
-      /\\/g,
-      "/"
-    )}`;
+    const fileUrl = `http://localhost:5000/download/file/${video?.filename}`;
 
     const link = document.createElement("a");
     link.href = fileUrl;
-    link.download = video.videotitle || "video.mp4";
+    link.download = video?.videotitle || "video.mp4";
 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    alert("Download started!");
   } catch (error) {
     console.error("DOWNLOAD ERROR:", error);
   }
@@ -228,24 +285,35 @@ const VideoInfo = ({ video }: any) => {
           {/* DOWNLOAD */}
           <button
           onClick={handleDownload}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm hover:bg-gray-200"
-          >
-            <Download size={16} />
-            Download
-          </button>
+          disabled={downloadBlocked}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm ${
+            downloadBlocked
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-gray-100 hover:bg-gray-200"
+            }`}
+            >
+              <Download size={16} />
+              Download
+              </button>
+              {/* LIMIT MESSAGE */}
+              {downloadBlocked && (
+                <div className="mt-2 text-sm text-red-600">
+                  ⚠️ Free limit reached (1 download/day). Upgrade to Premium.
+                  </div>
+                )}
 
           {/* WATCH LATER */}
           <button
-            onClick={handleWatchLater}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm ${
-              watchLater
-                ? "bg-black text-white"
-                : "bg-gray-100 hover:bg-gray-200"
-            }`}
-          >
-            <Clock3 size={16} />
-            Watch Later ({watchLaterCount})
-          </button>
+  onClick={handleWatchLater}
+  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm ${
+    watchLater
+      ? "bg-black text-white"
+      : "bg-gray-100 hover:bg-gray-200"
+  }`}
+>
+  <Clock3 size={16} />
+  Watch Later ({watchLaterCount})
+</button>
 
           {/* MORE */}
           <button className="flex items-center justify-center px-3 py-2 bg-gray-100 rounded-full hover:bg-gray-200">
@@ -278,6 +346,24 @@ const VideoInfo = ({ video }: any) => {
             ? "Show less"
             : "Show more"}
         </button>
+        {showPremiumPopup && (
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-white shadow-2xl rounded-xl px-6 py-4 border w-80">
+              <h3 className="text-lg font-semibold text-red-600">
+                Premium Required
+                </h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  Upgrade to Premium for unlimited downloads.
+                  </p>
+                  <button
+                  onClick={() => setShowPremiumPopup(false)}
+                  className="mt-4 w-full bg-black text-white py-2 rounded-lg"
+                  >
+                    OK
+                    </button>
+                    </div>
+                    </div>
+                  )}
 
       </div>
     </div>

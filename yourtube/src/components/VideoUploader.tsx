@@ -20,12 +20,14 @@ export default function VideoUploader({
   onVideoUpload,
 }: VideoUploaderProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (
+  const handleVideoChange = (
     e: ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
@@ -41,23 +43,40 @@ export default function VideoUploader({
     }
   };
 
+  const handleThumbnailChange = (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setThumbnailFile(file);
+  };
+
   const resetForm = () => {
     setVideoFile(null);
+    setThumbnailFile(null);
     setVideoTitle("");
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
+
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = "";
     }
   };
 
   const uploadVideo = async () => {
     if (!videoFile) {
-      alert("Please select a video");
+      alert("Please select a video.");
       return;
     }
 
+    
+
     if (!videoTitle.trim()) {
-      alert("Please enter a video title");
+      alert("Please enter a title.");
       return;
     }
 
@@ -66,8 +85,9 @@ export default function VideoUploader({
 
       const formData = new FormData();
 
-      formData.append("videotitle", videoTitle);
       formData.append("video", videoFile);
+
+      formData.append("videotitle", videoTitle);
       formData.append(
         "videochannel",
         channelName || "My Channel"
@@ -85,30 +105,25 @@ export default function VideoUploader({
 
       const data = await response.json();
 
-      console.log("Server Response:", data);
+      console.log("UPLOAD RESPONSE:", data);
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Upload failed"
-        );
+        throw new Error(data.message);
       }
 
       onVideoUpload?.({
         _id: data.video._id,
         videotitle: data.video.videotitle,
-        thumbnail: "/thumb.jpg",
-        views: data.video.views || 0,
+        thumbnail: data.video.thumbnail,
+        views: data.video.views,
       });
 
       alert("Video uploaded successfully!");
 
       resetForm();
     } catch (error: any) {
-      console.error("Upload Error:", error);
-
-      alert(
-        error.message || "Video upload failed"
-      );
+      console.error(error);
+      alert(error.message);
     } finally {
       setUploading(false);
     }
@@ -117,41 +132,40 @@ export default function VideoUploader({
   return (
     <div className="border rounded-xl p-6 bg-white">
       <h2 className="text-3xl font-bold mb-6">
-        Upload a Video
+        Upload Video
       </h2>
 
       {!videoFile ? (
         <div
           className="border-2 border-dashed rounded-xl p-16 text-center cursor-pointer hover:bg-gray-50"
-          onClick={() =>
-            fileInputRef.current?.click()
-          }
+          onClick={() => videoInputRef.current?.click()}
         >
           <input
-            ref={fileInputRef}
+            ref={videoInputRef}
             type="file"
             accept="video/*"
-            onChange={handleFileChange}
             className="hidden"
+            onChange={handleVideoChange}
           />
 
           <h3 className="text-xl font-medium">
-            Select a Video
+            Select Video
           </h3>
 
           <p className="text-gray-500 mt-2">
-            Click here to choose a video file
+            Click to choose a video
           </p>
         </div>
       ) : (
-        <div>
-          <p className="font-semibold">
-            Selected File:
-          </p>
+        <div className="space-y-4">
 
-          <p className="text-gray-600">
-            {videoFile.name}
-          </p>
+          <div>
+            <p className="font-semibold">
+              Selected Video
+            </p>
+
+            <p>{videoFile.name}</p>
+          </div>
 
           <input
             type="text"
@@ -159,11 +173,14 @@ export default function VideoUploader({
             onChange={(e) =>
               setVideoTitle(e.target.value)
             }
-            placeholder="Enter video title"
-            className="w-full border rounded-lg p-3 mt-4"
+            placeholder="Video Title"
+            className="w-full border rounded-lg p-3"
           />
 
-          <div className="flex gap-3 mt-4">
+          
+
+          <div className="flex gap-3">
+
             <button
               onClick={resetForm}
               disabled={uploading}
@@ -175,13 +192,15 @@ export default function VideoUploader({
             <button
               onClick={uploadVideo}
               disabled={uploading}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg"
+              className="bg-red-600 text-white px-5 py-2 rounded-lg"
             >
               {uploading
                 ? "Uploading..."
                 : "Upload Video"}
             </button>
+
           </div>
+
         </div>
       )}
     </div>

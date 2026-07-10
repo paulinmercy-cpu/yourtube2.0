@@ -12,11 +12,13 @@ import {
   useEffect,
   useState,
 } from "react";
-
+import { getThemeByLocation } from "./theme";
 import { auth, provider } from "./firebase";
 import axiosInstance from "./axiosinstance";
 
+
 const UserContext = createContext(null);
+
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -63,82 +65,136 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  const getUserState = async () => {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve("");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+
+          const data = await response.json();
+
+          resolve(data.address.state || "");
+        } catch (error) {
+          console.error(error);
+          resolve("");
+        }
+      },
+      () => {
+        resolve("");
+      }
+    );
+  });
+};
+
+
   // Google Sign In
   const handlegooglesignin = async () => {
-    try {
-      const result = await signInWithPopup(
-        auth,
-        provider
+  try {
+    const result = await signInWithPopup(auth, provider);
+
+    const firebaseuser = result.user;
+    const state = await getUserState();
+
+    const payload = {
+      email: firebaseuser.email,
+      name: firebaseuser.displayName,
+      image:
+        firebaseuser.photoURL ||
+        "https://github.com/shadcn.png",
+      state,
+      phone: "",
+    };
+
+    console.log("Payload:", payload);
+
+    // Send OTP
+    const response = await axiosInstance.post(
+      "/user/login",
+      payload
+    );
+
+    console.log(response.data);
+
+    if (response.data.success) {
+      const otp = prompt(
+        `Enter OTP sent to your ${
+          state === "Tamil Nadu"
+            ? "Email"
+            : "Mobile"
+        }`
       );
 
-      const firebaseuser = result.user;
+      if (!otp) return;
 
-      const payload = {
-        email: firebaseuser.email,
-        name: firebaseuser.displayName,
-        image:
-          firebaseuser.photoURL ||
-          "https://github.com/shadcn.png",
-      };
+      const verifyResponse =
+        await axiosInstance.post(
+          "/user/verify-otp",
+          {
+            userId: response.data.userId,
+            otp,
+          }
+        );
 
-      const response = await axiosInstance.post(
-        "/user/login",
-        payload
-      );
+      if (verifyResponse.data.success) {
+        const userdata =
+          verifyResponse.data.result;
 
-      const userdata =
-        response.data.result ||
-        response.data.user ||
-        response.data;
+        const theme = getThemeByLocation(
+          userdata.state
+        );
 
-      login(userdata);
-    } catch (error) {
-      console.error(
-        "Google Login Error:",
-        error.code,
-        error.message
-      );
+        console.log("State:", userdata.state);
+        console.log("Theme:", theme);
+
+        localStorage.setItem(
+          "theme",
+          theme
+        );
+
+        document.documentElement.classList.remove(
+          "light",
+          "dark"
+        );
+
+        document.documentElement.classList.add(
+          theme
+        );
+
+        login(userdata);
+
+        alert("Login Successful");
+      } else {
+        alert("Invalid OTP");
+      }
     }
-  };
+  } catch (error) {
+    console.error(
+      "Google Login Error:",
+      error.response?.data || error
+    );
+  }
+};
 
   // Firebase auth listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (firebaseuser) => {
-        if (!firebaseuser) return;
+  const unsubscribe = onAuthStateChanged(auth, (firebaseuser) => {
+    if (!firebaseuser) {
+      setUser(null);
+    }
+  });
 
-        try {
-          const payload = {
-            email: firebaseuser.email,
-            name: firebaseuser.displayName,
-            image:
-              firebaseuser.photoURL ||
-              "https://github.com/shadcn.png",
-          };
-
-          const response = await axiosInstance.post(
-            "/user/login",
-            payload
-          );
-
-          const userdata =
-            response.data.result ||
-            response.data.user ||
-            response.data;
-
-          login(userdata);
-        } catch (error) {
-          console.error(
-            "Auth State Error:",
-            error
-          );
-        }
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
+  return () => unsubscribe();
+}, []);
 
   return (
     <UserContext.Provider

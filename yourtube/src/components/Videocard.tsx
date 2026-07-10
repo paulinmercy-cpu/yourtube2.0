@@ -26,8 +26,9 @@ export default function Videocard({
     }
   }, [video?.createdAt]);
 
-  const videoUrl = video?.filename
-    ? `http://localhost:5000/uploads/${video.filename}`
+  // Thumbnail URL
+  const thumbnailUrl = video?.thumbnail
+    ? `http://localhost:5000/uploads/${video.thumbnail}`
     : "";
 
   return (
@@ -36,36 +37,28 @@ export default function Videocard({
       className="block cursor-pointer"
     >
       <div>
-        {/* Video Preview */}
+        {/* Thumbnail */}
         <div className="rounded-xl overflow-hidden bg-gray-200 aspect-video">
-          {videoUrl ? (
-            <video
-              src={videoUrl}
+          {thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt={video.videotitle}
               className="w-full h-full object-cover"
-              muted
-              preload="metadata"
-              playsInline
-              onMouseOver={(e) =>
-                e.currentTarget.play()
-              }
-              onMouseOut={(e) => {
-                e.currentTarget.pause();
-                e.currentTarget.currentTime = 0;
-              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-500">
-              No Preview
+              No Thumbnail
             </div>
           )}
         </div>
 
         {/* Video Info */}
         <div className="flex gap-3 mt-3">
-          <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center font-medium">
+          {/* Channel Avatar */}
+          <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center font-medium text-black">
             {video.videochannel
-              ?.charAt(0)
-              ?.toUpperCase() || "U"}
+              ? video.videochannel.charAt(0).toUpperCase()
+              : "U"}
           </div>
 
           <div className="flex-1">
@@ -74,15 +67,12 @@ export default function Videocard({
             </h3>
 
             <p className="text-sm text-gray-600">
-              {video.videochannel ||
-                "Unknown Channel"}
+              {video.videochannel || "Unknown Channel"}
             </p>
 
             <p className="text-sm text-gray-500">
-              {(video.views || 0).toLocaleString()}
-              {" "}views
-              {timeAgo &&
-                ` • ${timeAgo}`}
+              {(video.views || 0).toLocaleString()} views
+              {timeAgo && ` • ${timeAgo}`}
             </p>
           </div>
         </div>

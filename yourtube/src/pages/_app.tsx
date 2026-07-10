@@ -3,20 +3,46 @@ import Sidebar from "@/components/Sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
-import {UserProvider} from "../lib/AuthContext"
+import { UserProvider } from "../lib/AuthContext";
+import ThemeProvider from "@/components/ThemeProvider";
+import { useRouter } from "next/router";
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App({
+  Component,
+  pageProps,
+}: AppProps) {
+  const router = useRouter();
+
+  const isCallPage = router.pathname === "/call";
+
   return (
     <UserProvider>
-      <div className="min-h-screen bg-white text-black">
-        <title>Your-Tube Clone</title>
-        <Header />
-        <Toaster />
-        <div className="flex">
-          <Sidebar />
-          <Component {...pageProps} />
+      <ThemeProvider>
+        <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+
+          <title>Your-Tube Clone</title>
+
+          <Toaster />
+
+          {isCallPage ? (
+
+            <Component {...pageProps} />
+
+          ) : (
+
+            <>
+              <Header />
+
+              <div className="flex">
+                <Sidebar />
+                <Component {...pageProps} />
+              </div>
+            </>
+
+          )}
+
         </div>
-      </div>
+      </ThemeProvider>
     </UserProvider>
   );
 }

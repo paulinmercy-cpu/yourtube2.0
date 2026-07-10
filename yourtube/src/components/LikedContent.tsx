@@ -7,14 +7,15 @@ import { useEffect, useState } from "react";
 
 interface LikedVideo {
   _id: string;
-  likedon: Date;
-  video: {
+  createdAt: string;
+  videoId: {
     _id: string;
     videotitle: string;
     videochannel: string;
     views: number;
-    createdAt: Date;
-    filepath: string;
+    createdAt: string;
+    thumbnail?: string;
+    filename?: string;
   };
 }
 
@@ -22,107 +23,127 @@ export default function LikeContent() {
   const [likedVideos, setLikedVideos] = useState<LikedVideo[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const user = {
-    id: "1",
-    name: "John Doe",
-  };
-
   useEffect(() => {
-    if (user) {
-      loadLikedVideos();
-    }
+    loadLikedVideos();
   }, []);
 
-  const loadLikedVideos = async () => {
+  async function loadLikedVideos() {
     try {
-      const data: LikedVideo[] = [
-        {
-          _id: "1",
-          likedon: new Date(),
-          video: {
-            _id: "1",
-            videotitle: "The Apothecary Diaries",
-            videochannel: "Tamil Anime",
-            views: 50000,
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-            filepath: "/video/The Apothecary Diaries.mp4",
-          },
-        },
-        {
-          _id: "2",
-          likedon: new Date(Date.now() - 3600000),
-          video: {
-            _id: "2",
-            videotitle: "The Apothecary Diaries Episode 2",
-            videochannel: "Tamil Anime",
-            views: 48000,
-            createdAt: new Date(Date.now() - 86400000),
-            filepath: "/video/The Apothecary Diaries.mp4",
-          },
-        },
-      ];
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-      setLikedVideos(data);
+      if (!user?._id) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:5000/like/liked/${user._id}`
+      );
+
+      const data = await response.json();
+
+      console.log("Liked Videos:", data);
+
+      if (data.success) {
+        setLikedVideos(data.videos);
+      } else {
+        setLikedVideos([]);
+      }
     } catch (error) {
       console.error(error);
+      setLikedVideos([]);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-[500px]">
+        <h2 className="text-xl">Loading...</h2>
+      </div>
+    );
   }
 
   return (
-    <div className="px-6 py-4">
-      <h1 className="text-2xl font-normal">Liked Videos</h1>
+    <div className="w-full px-8 py-6">
+      <h1 className="text-3xl font-bold">
+        Liked Videos
+      </h1>
 
-      <p className="text-sm text-gray-500 mb-4">
-        {likedVideos.length} videos
+      <p className="text-gray-500 mt-2 mb-8">
+        {likedVideos.length} Videos
       </p>
 
-      <div className="space-y-4">
-        {likedVideos.map((item) => (
-          <div
-            key={item._id}
-            className="flex items-start gap-3 w-fit group"
-          >
-            <Link href={`/watch/${item.video._id}`}>
-              <video
-                src={item.video.filepath}
-                className="w-[140px] h-[80px] rounded object-cover"
-                muted
-              />
-            </Link>
+      {likedVideos.length === 0 ? (
+        <div className="text-center mt-24">
+          <h2 className="text-2xl font-semibold">
+            No liked videos
+          </h2>
 
-            <div className="min-w-[220px]">
-              <Link href={`/watch/${item.video._id}`}>
-                <h3 className="text-[15px] font-medium group-hover:text-blue-600">
-                  {item.video.videotitle}
-                </h3>
+          <p className="text-gray-500 mt-2">
+            Like a video to see it here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {likedVideos.map((item) => (
+            <div
+              key={item._id}
+              className="flex gap-4 p-3 rounded-xl hover:bg-gray-100 transition"
+            >
+              {/* Thumbnail */}
+              <Link href={`/watch/${item.videoId._id}`}>
+                <img
+                  src={
+                    item.videoId.thumbnail
+                      ? `http://localhost:5000/uploads/${item.videoId.thumbnail}`
+                      : "/thumbnail.jpg"
+                  }
+                  alt={item.videoId.videotitle}
+                  className="w-[220px] h-[130px] rounded-xl object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/thumbnail.jpg";
+                  }}
+                />
               </Link>
 
-              <p className="text-sm text-gray-600">
-                {item.video.videochannel}
-              </p>
+              {/* Details */}
+              <div className="flex-1">
+                <Link href={`/watch/${item.videoId._id}`}>
+                  <h2 className="text-lg font-semibold hover:text-blue-600 line-clamp-2">
+                    {item.videoId.videotitle}
+                  </h2>
+                </Link>
 
-              <p className="text-sm text-gray-600">
-                {item.video.views.toLocaleString()} views •{" "}
-                {formatDistanceToNow(item.video.createdAt)} ago
-              </p>
+                <p className="text-gray-600 mt-2">
+                  {item.videoId.videochannel}
+                </p>
 
-              <p className="text-xs text-gray-500 mt-1">
-                Liked {formatDistanceToNow(item.likedon)} ago
-              </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {item.videoId.views.toLocaleString()} views •{" "}
+                  {formatDistanceToNow(
+                    new Date(item.videoId.createdAt),
+                    { addSuffix: true }
+                  )}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-2">
+                  Liked{" "}
+                  {formatDistanceToNow(
+                    new Date(item.createdAt),
+                    { addSuffix: true }
+                  )}
+                </p>
+              </div>
+
+              <button className="p-2 rounded-full hover:bg-gray-200">
+                <MoreVertical size={20} />
+              </button>
             </div>
-
-            <button className="p-1 hover:bg-gray-100 rounded-full">
-              <MoreVertical size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

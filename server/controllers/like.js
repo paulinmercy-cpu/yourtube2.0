@@ -1,88 +1,120 @@
-import like from "../Modals/like.js";
-import video from "../Modals/video.js";
+import Like from "../Modals/like.js";
+import Video from "../Modals/video.js";
 
+// ===============================
+// LIKE / UNLIKE VIDEO
+// ===============================
 export const handlelike = async (req, res) => {
-  const { userId } = req.body;
-  const { videoId } = req.params;
-
   try {
-    // ✅ CHECK VIDEO EXISTS (added)
-    const videoExists = await video.findById(videoId);
-    if (!videoExists) {
+    const { userId } = req.body;
+    const { videoId } = req.params;
+
+    console.log("BODY:", req.body);
+    console.log("PARAMS:", req.params);
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required",
+      });
+    }
+
+    if (!videoId) {
+      return res.status(400).json({
+        success: false,
+        message: "videoId is required",
+      });
+    }
+
+    // Check video exists
+    const video = await Video.findById(videoId);
+
+    if (!video) {
       return res.status(404).json({
+        success: false,
         message: "Video not found",
       });
     }
 
-    const existinglike = await like.findOne({
-      viewer: userId,
-      videoid: videoId,
+    // Check if already liked
+    const existingLike = await Like.findOne({
+      userId,
+      videoId,
+      type: "like",
     });
 
-    // 🔁 UNLIKE
-    if (existinglike) {
-      await like.findByIdAndDelete(existinglike._id);
+    // ===============================
+    // UNLIKE
+    // ===============================
+    if (existingLike) {
+      await Like.findByIdAndDelete(existingLike._id);
 
-      // ✅ PREVENT NEGATIVE LIKES (added)
-      const videoData = await video.findById(videoId);
-
-      if (videoData.likes > 0) {
-        await video.findByIdAndUpdate(videoId, {
-          $inc: { likes: -1 },
-        });
+      if (video.likes > 0) {
+        video.likes -= 1;
       }
 
-      const updatedVideo = await video.findById(videoId);
+      await video.save();
 
       return res.status(200).json({
+        success: true,
         liked: false,
-        likes: updatedVideo?.likes || 0, // ✅ SAFE
+        likes: video.likes,
       });
     }
 
-    // ❤️ LIKE
-    await like.create({
-      viewer: userId,
-      videoid: videoId,
+    // ===============================
+    // LIKE
+    // ===============================
+    await Like.create({
+      userId,
+      videoId,
+      type: "like",
     });
 
-    await video.findByIdAndUpdate(videoId, {
-      $inc: { likes: 1 },
-    });
+    video.likes += 1;
 
-    const updatedVideo = await video.findById(videoId);
+    await video.save();
 
     return res.status(200).json({
+      success: true,
       liked: true,
-      likes: updatedVideo?.likes || 0, // ✅ SAFE
+      likes: video.likes,
     });
-
   } catch (error) {
-    console.log(error);
+    console.error("LIKE ERROR:", error);
+
     return res.status(500).json({
+      success: false,
       message: "Something went wrong",
+      error: error.message,
     });
   }
 };
 
-
-// ✅ GET ALL LIKED VIDEOS
+// ===============================
+// GET ALL LIKED VIDEOS
+// ===============================
 export const getalllikedVideo = async (req, res) => {
-  const { userId } = req.params;
-
   try {
-    const likevideo = await like
-      .find({ viewer: userId })
-      .populate({
-        path: "videoid",
-        model: "videofiles",
-      });
+    const { userId } = req.params;
 
-    return res.status(200).json(likevideo);
+    const likedVideos = await Like.find({
+      userId,
+      type: "like",
+    }).populate({
+      path: "videoId",
+      model: "videofiles",
+    });
 
+    return res.status(200).json({
+      success: true,
+      videos: likedVideos,
+    });
   } catch (error) {
-    console.log(error);
+    console.error("GET LIKED VIDEOS ERROR:", error);
+
     return res.status(500).json({
+      success: false,
       message: "Something went wrong",
     });
   }

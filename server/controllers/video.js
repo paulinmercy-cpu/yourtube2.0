@@ -1,6 +1,16 @@
 import Video from "../Modals/video.js";
+import ffmpeg from "fluent-ffmpeg";
+import path from "path";
+import fs from "fs";
 
-// UPLOAD VIDEO
+ffmpeg.setFfmpegPath(
+  "C:\\Users\\pauli\\OneDrive\\Documents\\you\\ffmpeg-8.1.2-essentials_build\\ffmpeg-8.1.2-essentials_build\\bin\\ffmpeg.exe"
+);
+
+ffmpeg.setFfprobePath(
+  "C:\\Users\\pauli\\OneDrive\\Documents\\you\\ffmpeg-8.1.2-essentials_build\\ffmpeg-8.1.2-essentials_build\\bin\\ffprobe.exe"
+);
+// ================= UPLOAD VIDEO =================
 export const uploadVideo = async (req, res) => {
   try {
     const {
@@ -10,25 +20,65 @@ export const uploadVideo = async (req, res) => {
       uploader,
     } = req.body;
 
-    const file = req.file;
+    const videoFile =
+      req.files?.video && req.files.video.length
+        ? req.files.video[0]
+        : null;
 
-    if (!file) {
+    if (!videoFile) {
       return res.status(400).json({
         success: false,
-        message: "Video file required",
+        message: "Video file is required",
       });
     }
 
+    // Generate thumbnail filename
+    const thumbnailName =
+      Date.now() + "-thumbnail.jpg";
+
+    const thumbnailPath = path.join(
+      "uploads",
+      thumbnailName
+    );
+
+    // Generate thumbnail using FFmpeg
+    console.log("Generating thumbnail...");
+console.log("Video:", videoFile.path);
+console.log("Thumbnail:", thumbnailName);
+
+await new Promise((resolve, reject) => {
+  ffmpeg(videoFile.path)
+    .on("start", (commandLine) => {
+      console.log("FFmpeg started:");
+      console.log(commandLine);
+    })
+    .on("end", () => {
+      console.log("Thumbnail generated successfully!");
+      resolve();
+    })
+    .on("error", (err) => {
+      console.error("FFmpeg Error:", err);
+      reject(err);
+    })
+    .screenshots({
+      count: 1,
+      folder: "uploads",
+      filename: thumbnailName,
+      size: "640x360",
+    });
+});
+
+    // Save video in MongoDB
     const video = new Video({
       videotitle,
-      filename: file.filename,
-      filetype: file.mimetype,
-      filepath: file.path,
-      filesize: file.size,
+      filename: videoFile.filename,
+      filetype: videoFile.mimetype,
+      filepath: videoFile.path,
+      filesize: videoFile.size,
       videochannel,
       category,
       uploader,
-      thumbnail: "",
+      thumbnail: thumbnailName,
       avatar: "",
     });
 
@@ -49,42 +99,42 @@ export const uploadVideo = async (req, res) => {
   }
 };
 
-// GET ALL VIDEOS
+// ================= GET ALL VIDEOS =================
 export const getVideos = async (req, res) => {
   try {
     const videos = await Video.find().sort({
       createdAt: -1,
     });
 
-    const videosWithUrl = videos.map((video) => ({
+    const videosWithUrls = videos.map((video) => ({
       ...video._doc,
-      videoUrl: `http://localhost:5000/${video.filepath.replace(
-        /\\/g,
-        "/"
-      )}`,
+
+      videoUrl: `http://localhost:5000/uploads/${video.filename}`,
+
+      thumbnailUrl: video.thumbnail
+        ? `http://localhost:5000/uploads/${video.thumbnail}`
+        : "",
     }));
 
     res.status(200).json({
       success: true,
       count: videos.length,
-      videos: videosWithUrl,
+      videos: videosWithUrls,
     });
   } catch (error) {
-    console.error("GET VIDEOS ERROR:", error);
+    console.error(error);
 
     res.status(500).json({
       success: false,
-      message: "Failed to fetch videos",
+      message: error.message,
     });
   }
 };
 
-// GET SINGLE VIDEO
+// ================= GET VIDEO BY ID =================
 export const getVideoById = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const video = await Video.findById(id);
+    const video = await Video.findById(req.params.id);
 
     if (!video) {
       return res.status(404).json({
@@ -95,10 +145,16 @@ export const getVideoById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      video,
+      video: {
+        ...video._doc,
+        videoUrl: `http://localhost:5000/uploads/${video.filename}`,
+        thumbnailUrl: video.thumbnail
+          ? `http://localhost:5000/uploads/${video.thumbnail}`
+          : "",
+      },
     });
   } catch (error) {
-    console.error("GET VIDEO ERROR:", error);
+    console.error(error);
 
     res.status(500).json({
       success: false,
@@ -107,111 +163,15 @@ export const getVideoById = async (req, res) => {
   }
 };
 
-// LIKE VIDEO
+// ================= LIKE VIDEO =================
 export const likeVideo = async (req, res) => {
   try {
-    const { id } = req.params;
-
     const video = await Video.findByIdAndUpdate(
-      id,
-      { $inc: { likes: 1 } },
-      { new: true }
-    );
-
-    if (!video) {
-      return res.status(404).json({
-        success: false,
-        message: "Video not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      video,
-    });
-  } catch (error) {
-    console.error("LIKE ERROR:", error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// DISLIKE VIDEO
-export const dislikeVideo = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const video = await Video.findByIdAndUpdate(
-      id,
-      { $inc: { dislikes: 1 } },
-      { new: true }
-    );
-
-    if (!video) {
-      return res.status(404).json({
-        success: false,
-        message: "Video not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      video,
-    });
-  } catch (error) {
-    console.error("DISLIKE ERROR:", error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// ADD VIEW
-export const addView = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const video = await Video.findByIdAndUpdate(
-      id,
-      { $inc: { views: 1 } },
-      { new: true }
-    );
-
-    if (!video) {
-      return res.status(404).json({
-        success: false,
-        message: "Video not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      video,
-    });
-  } catch (error) {
-    console.error("VIEW ERROR:", error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// ADD WATCH LATER
-export const addWatchLater = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const video = await Video.findByIdAndUpdate(
-      id,
+      req.params.id,
       {
-        $inc: { watchLater: 1 },
+        $inc: {
+          likes: 1,
+        },
       },
       {
         new: true,
@@ -230,8 +190,108 @@ export const addWatchLater = async (req, res) => {
       video,
     });
   } catch (error) {
-    console.error("WATCH LATER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
+// ================= DISLIKE VIDEO =================
+export const dislikeVideo = async (req, res) => {
+  try {
+    const video = await Video.findByIdAndUpdate(
+      req.params.id,
+      {
+        $inc: {
+          dislikes: 1,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: "Video not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      video,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ================= ADD VIEW =================
+export const addView = async (req, res) => {
+  try {
+    const video = await Video.findByIdAndUpdate(
+      req.params.id,
+      {
+        $inc: {
+          views: 1,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: "Video not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      video,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ================= WATCH LATER =================
+export const addWatchLater = async (req, res) => {
+  try {
+    const video = await Video.findByIdAndUpdate(
+      req.params.id,
+      {
+        $inc: {
+          watchLater: 1,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: "Video not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      video,
+    });
+  } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message,

@@ -21,6 +21,12 @@ const videoSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    
+
+channelName: {
+  type: String,
+  default: "",
+},
 
     // FIXED: ensure number consistency
     filesize: {

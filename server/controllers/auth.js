@@ -1,37 +1,126 @@
 import mongoose from "mongoose";
 import users from "../Modals/Auth.js";
+import {
+  generateOTP,
+  sendEmailOTP,
+  sendMobileOTP,
+} from "../filehelper/sendOTP.js";
 
 // ================= LOGIN =================
 export const login = async (req, res) => {
   try {
-    const { email, name, image } = req.body;
+    const { email, name, image, phone, state } = req.body;
 
     console.log("LOGIN BODY:", req.body);
 
     if (!email) {
       return res.status(400).json({
+        success: false,
         message: "Email is required",
       });
     }
 
-    let existinguser = await users.findOne({
-      email,
-    });
+    let existinguser = await users.findOne({ email });
 
+    // Create new user
     if (!existinguser) {
       existinguser = await users.create({
         email,
         name,
         image,
+        phone,
+        state,
       });
+    } else {
+      // Update user details
+      existinguser.name = name || existinguser.name;
+      existinguser.image = image || existinguser.image;
+      existinguser.phone = phone || existinguser.phone;
+      existinguser.state = state || existinguser.state;
+    }
+
+    // ================= OTP =================
+    const southStates = [
+      "Tamil Nadu",
+      "Kerala",
+      "Karnataka",
+      "Andhra Pradesh",
+      "Telangana",
+    ];
+
+    const otp = generateOTP();
+
+    existinguser.otp = otp;
+    existinguser.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+    await existinguser.save();
+
+    if (southStates.includes(existinguser.state)) {
+      console.log("Sending OTP to EMAIL");
+
+      await sendEmailOTP(existinguser.email, otp);
+    } else {
+      console.log("Sending OTP to MOBILE");
+
+      await sendMobileOTP(existinguser.phone, otp);
     }
 
     return res.status(200).json({
       success: true,
-      result: existinguser,
+      message: "OTP sent successfully",
+      userId: existinguser._id,
+      state: existinguser.state,
     });
   } catch (error) {
     console.error("LOGIN CONTROLLER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ================= VERIFY OTP =================
+export const verifyOTP = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+
+    const user = await users.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    if (!user.otpExpiry || new Date() > user.otpExpiry) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired",
+      });
+    }
+
+    user.otp = "";
+    user.otpExpiry = null;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Login Successful",
+      result: user,
+    });
+  } catch (error) {
+    console.error("VERIFY OTP ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -81,19 +170,18 @@ export const updateprofile = async (req, res) => {
   }
 
   try {
-    const updatedData =
-      await users.findByIdAndUpdate(
-        _id,
-        {
-          $set: {
-            channelname,
-            description,
-          },
+    const updatedData = await users.findByIdAndUpdate(
+      _id,
+      {
+        $set: {
+          channelname,
+          description,
         },
-        {
-          new: true,
-        }
-      );
+      },
+      {
+        new: true,
+      }
+    );
 
     return res.status(200).json(updatedData);
   } catch (error) {

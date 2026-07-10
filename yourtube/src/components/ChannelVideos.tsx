@@ -36,18 +36,30 @@ const ChannelVideos = ({
               key={video._id}
             >
               <div className="bg-white rounded-xl overflow-hidden shadow border hover:shadow-lg transition cursor-pointer">
-                <video
-                src={`http://localhost:5000/uploads/${video.filename}`}
-                className="w-full h-48 object-cover"
-                muted
-                preload="metadata"
-                playsInline
-                onMouseOver={(e) => e.currentTarget.play()}
-                onMouseOut={(e) => {
-                  e.currentTarget.pause();
-                  e.currentTarget.currentTime = 0;
-                  }}
-                  />
+                <div className="relative w-full h-48 overflow-hidden">
+  <img
+    className="absolute inset-0 w-full h-full object-cover"
+    src={
+      video.thumbnail
+        ? `http://localhost:5000/uploads/${video.thumbnail}`
+        : "/thumbnail.jpg"
+    }
+    alt={video.videotitle}
+  />
+
+  <video
+    src={`http://localhost:5000/uploads/${video.filename}`}
+    className="absolute inset-0 w-full h-full object-cover opacity-0 hover:opacity-100 transition-opacity"
+    muted
+    playsInline
+    loop
+    onMouseEnter={(e) => e.currentTarget.play()}
+    onMouseLeave={(e) => {
+      e.currentTarget.pause();
+      e.currentTarget.currentTime = 0;
+    }}
+  />
+</div>
 
                 <div className="p-4">
                   <h3 className="font-semibold text-lg line-clamp-2">

@@ -1,85 +1,93 @@
 "use client";
 
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
 import Comments from "@/components/Comments";
 import RelatedVideos from "@/components/RelatedVideos";
 import VideoInfo from "@/components/VideoInfo";
 import Videoplayer from "@/components/Videopplayer";
-import axiosInstance from "@/lib/axiosinstance";
 
 export default function WatchVideo() {
-  const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+
+  const id = params.id as string;
 
   const [video, setVideo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  if (!id) return;
+    if (!id) return;
 
-  const fetchVideo = async () => {
-    try {
-      setLoading(true);
+    const fetchVideo = async () => {
+      try {
+        setLoading(true);
 
-      await fetch(`http://localhost:5000/video/${id}/view`, {
-        method: "PUT",
-      });
+        const response = await fetch(
+          `http://localhost:5000/video/${id}`
+        );
 
-      const response = await fetch(
-        `http://localhost:5000/video/${id}`
-      );
+        const data = await response.json();
 
-      const data = await response.json();
-      
+        console.log("VIDEO RESPONSE:", data);
 
-      
-      console.log("VIDEO DATA:", data);
-      console.log("FILENAME:", data.filename);
-      console.log("FILEPATH:", data.filepath);
-
-      if (data.success) {
-        setVideo(data.video);
+        if (data.success) {
+          setVideo(data.video);
+        } else {
+          setVideo(null);
+        }
+      } catch (error) {
+        console.error(error);
+        setVideo(null);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("FETCH ERROR:", error);
-      setVideo(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchVideo();
-}, [id]);
+    fetchVideo();
+  }, [id]);
 
   if (loading) {
-    return <div className="p-6 text-center">Loading...</div>;
+    return (
+      <div className="p-6 text-center">
+        Loading...
+      </div>
+    );
   }
 
   if (!video) {
-  return (
-    <div className="p-6 text-center">
-      Video not found
-    </div>
+    return (
+      <div className="p-6 text-center">
+        Video not found
+      </div>
     );
   }
+
+  const goToNextVideo = () => {
+    alert("Next Video");
+  };
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* LEFT */}
           <div className="lg:col-span-2">
-            <Videoplayer video={video} />
+            <Videoplayer
+              video={video}
+              videoId={video._id}
+              onNextVideo={goToNextVideo}
+            />
+
             <VideoInfo video={video} />
+
             <Comments videoId={video._id} />
           </div>
 
-          {/* RIGHT */}
           <div>
-            <RelatedVideos currentVideoId={video._id} />
+            <RelatedVideos
+              currentVideoId={video._id}
+            />
           </div>
 
         </div>

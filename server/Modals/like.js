@@ -4,7 +4,7 @@ const likeSchema = new mongoose.Schema(
   {
     videoId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Video", // ✅ match your Video model name
+      ref: "videofiles", // ✅ match your Video model name
       required: true,
     },
 

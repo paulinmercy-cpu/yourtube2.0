@@ -10,6 +10,8 @@ import {
   ThumbsUp,
   History,
   User,
+  Download,
+  Phone,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import Channeldialogue from "./Channeldialogue";
@@ -75,6 +77,18 @@ const Sidebar = () => {
             Watch later
           </Button>
         </Link>
+        <Link href="/downloads">
+        <Button variant="ghost" className="w-full justify-start">
+          <Download className="w-5 h-5 mr-3" />
+          Downloads
+          </Button>
+          </Link>
+          <Link href="/call">
+  <Button variant="ghost" className="w-full justify-start">
+    <Phone className="w-5 h-5 mr-3" />
+    Video Call
+  </Button>
+</Link>
 
         {/* Create Channel or Your Channel */}
         {hasChannel ? (
