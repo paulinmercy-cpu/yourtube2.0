@@ -1,4 +1,4 @@
-import Download from "../modals/Download.js";
+import Download from "../modals/download.js";
 import mongoose from "mongoose";
 
 // 📥 DOWNLOAD VIDEO + LIMIT LOGIC
