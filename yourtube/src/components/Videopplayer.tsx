@@ -222,6 +222,13 @@ useEffect(() => {
     player.removeEventListener("timeupdate", saveHistory);
   };
 }, [video]);
+if (!videoSrc) {
+  return (
+    <div className="aspect-video bg-black text-white flex items-center justify-center">
+      No video found
+    </div>
+  );
+}
 
   return (
     <div

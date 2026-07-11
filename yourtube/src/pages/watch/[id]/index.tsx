@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useRouter } from "next/router";
 
 import Comments from "@/components/Comments";
 import RelatedVideos from "@/components/RelatedVideos";
@@ -9,43 +9,48 @@ import VideoInfo from "@/components/VideoInfo";
 import Videoplayer from "@/components/Videopplayer";
 
 export default function WatchVideo() {
-  const params = useParams();
+  const router = useRouter();
 
-  const id = params.id as string;
+const { id } = router.query;
 
+if (!router.isReady) {
+  return (
+    <div className="p-6 text-center">
+      Loading...
+    </div>
+  );
+}
   const [video, setVideo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
+  if (!id) return;
 
-    const fetchVideo = async () => {
-      try {
-        setLoading(true);
+  const fetchVideo = async () => {
+    try {
+      setLoading(true);
 
-        const response = await fetch(
-          `http://localhost:5000/video/${id}`
-        );
+      const response = await fetch(
+        `http://localhost:5000/video/${id}`
+      );
 
-        const data = await response.json();
+      const data = await response.json();
 
-        console.log("VIDEO RESPONSE:", data);
-
-        if (data.success) {
-          setVideo(data.video);
-        } else {
-          setVideo(null);
-        }
-      } catch (error) {
-        console.error(error);
+      if (data.success) {
+        setVideo(data.video);
+      } else {
         setVideo(null);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error(error);
+      setVideo(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchVideo();
-  }, [id]);
+  fetchVideo();
+}, [id]);
 
   if (loading) {
     return (
