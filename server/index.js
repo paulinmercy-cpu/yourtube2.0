@@ -20,20 +20,41 @@ import historyRoutes from "./routes/history.js";
 import callRoutes from "./routes/call.js";
 import watchLaterRoutes from "./routes/watchLater.js";
 
-// Load environment variables
 dotenv.config();
-
-console.log("EMAIL_USER =", process.env.EMAIL_USER);
-console.log("EMAIL_PASS =", process.env.EMAIL_PASS);
 
 const app = express();
 
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:3000",
+      "https://yourtube2-0-ankq.vercel.app",
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Socket
+socketHandler(io);
+
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://yourtube2-0-ankq.vercel.app",
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
+// Static Files
 app.use("/uploads", express.static(path.resolve("uploads")));
 
 // Routes
@@ -48,40 +69,18 @@ app.use("/history", historyRoutes);
 app.use("/call", callRoutes);
 app.use("/watchlater", watchLaterRoutes);
 
-// Test route
 app.get("/", (req, res) => {
   res.send("YouTube backend running 🚀");
 });
 
 // MongoDB
-console.log("DB_URL =", process.env.DB_URL);
-
 mongoose
   .connect(process.env.DB_URL)
-  .then(() => {
-    console.log("MongoDB Connected");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+  .then(() => console.log("MongoDB Connected"))
+  .catch(console.error);
 
-// Create HTTP server
-const server = http.createServer(app);
-
-// Create Socket.IO server
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"],
-  },
-});
-
-// Initialize socket handlers
-socketHandler(io);
-
-// Start server
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} 🚀`);
+  console.log(`Server running on ${PORT}`);
 });
