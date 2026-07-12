@@ -8,7 +8,9 @@ export default function ThemeProvider({
   children: React.ReactNode;
 }) {
   useEffect(() => {
-    const theme = localStorage.getItem("theme") || "dark";
+    if (typeof window === "undefined") return;
+
+    const theme = localStorage.getItem("theme") || "light";
 
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);

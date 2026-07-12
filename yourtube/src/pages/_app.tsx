@@ -6,6 +6,7 @@ import type { AppProps } from "next/app";
 import { UserProvider } from "../lib/AuthContext";
 import ThemeProvider from "@/components/ThemeProvider";
 import { useRouter } from "next/router";
+import Head from "next/head";
 
 export default function App({
   Component,
@@ -18,29 +19,32 @@ export default function App({
   return (
     <UserProvider>
       <ThemeProvider>
-        <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
-
+        <Head>
           <title>Your-Tube Clone</title>
+          <meta
+            name="description"
+            content="YourTube video streaming platform"
+          />
+        </Head>
 
+        <div className="min-h-screen bg-white text-black">
           <Toaster />
 
           {isCallPage ? (
-
             <Component {...pageProps} />
-
           ) : (
-
             <>
               <Header />
 
               <div className="flex">
                 <Sidebar />
-                <Component {...pageProps} />
+
+                <main className="flex-1">
+                  <Component {...pageProps} />
+                </main>
               </div>
             </>
-
           )}
-
         </div>
       </ThemeProvider>
     </UserProvider>
