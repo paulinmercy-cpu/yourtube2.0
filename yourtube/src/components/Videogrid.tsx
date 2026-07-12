@@ -13,8 +13,7 @@ interface Video {
   thumbnail?: string;
 }
 
-const [videos, setVideos] = useState<Video[]>([]);
-
+// ✅ Categories OUTSIDE is fine
 const categories = [
   "All",
   "Music",
@@ -31,9 +30,8 @@ const categories = [
 export default function Videogrid() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
-  // ✅ FIX TYPE HERE
+  // ✅ KEEP hooks ONLY inside component
   const [videos, setVideos] = useState<Video[]>([]);
-
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
