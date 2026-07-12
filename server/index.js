@@ -24,8 +24,12 @@ dotenv.config();
 
 const app = express();
 
+// ✅ FIX 1: TRUST PROXY (VERY IMPORTANT)
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 
+// ✅ SOCKET.IO
 const io = new Server(server, {
   cors: {
     origin: [
@@ -40,7 +44,7 @@ const io = new Server(server, {
 // Socket
 socketHandler(io);
 
-// Middleware
+// ✅ CORS
 app.use(
   cors({
     origin: [
@@ -51,13 +55,15 @@ app.use(
   })
 );
 
+// ✅ BODY PARSER
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static Files
-app.use("/uploads", express.static(path.resolve("uploads")));
+// ✅ FIX 2: STATIC FILES (SAFE PATH)
+const __dirname = path.resolve();
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// ✅ ROUTES
 app.use("/user", userroutes);
 app.use("/video", videoroutes);
 app.use("/like", likeroutes);
@@ -69,16 +75,18 @@ app.use("/history", historyRoutes);
 app.use("/call", callRoutes);
 app.use("/watchlater", watchLaterRoutes);
 
+// ✅ ROOT
 app.get("/", (req, res) => {
   res.send("YouTube backend running 🚀");
 });
 
-// MongoDB
+// ✅ MONGODB
 mongoose
   .connect(process.env.DB_URL)
   .then(() => console.log("MongoDB Connected"))
-  .catch(console.error);
+  .catch((err) => console.error("Mongo Error:", err));
 
+// ✅ PORT
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

@@ -101,7 +101,7 @@ export const getVideos = async (req, res) => {
       createdAt: -1,
     });
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const baseUrl = `https://${req.get("host")}`;
 
     const videosWithUrls = videos.map((video) => ({
       ...video._doc,
@@ -137,8 +137,8 @@ export const getVideoById = async (req, res) => {
     }
 
     const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      "https://yourtube2-0-3-15aa.onrender.com";
+  process.env.BASE_URL ||
+  `https://${req.get("host")}`;
 
     res.status(200).json({
       success: true,
