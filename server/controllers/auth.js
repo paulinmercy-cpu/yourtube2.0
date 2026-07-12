@@ -9,7 +9,8 @@ export const login = async (req, res) => {
 
     console.log("LOGIN BODY:", req.body);
 
-    if (!email) {
+    // ✅ Validate email
+    if (!email || email.trim() === "") {
       return res.status(400).json({
         success: false,
         message: "Email is required",
@@ -18,23 +19,25 @@ export const login = async (req, res) => {
 
     let existinguser = await users.findOne({ email });
 
+    // ✅ Create user if not exists
     if (!existinguser) {
       existinguser = await users.create({
         email,
-        name,
-        image,
-        phone,
-        state,
+        name: name || "",
+        image: image || "",
+        phone: phone || "",
+        state: state || "",
       });
     } else {
+      // ✅ Update existing user
       existinguser.name = name || existinguser.name;
       existinguser.image = image || existinguser.image;
       existinguser.phone = phone || existinguser.phone;
       existinguser.state = state || existinguser.state;
     }
 
-    // Generate OTP
-    const otp = generateOTP();
+    // ✅ Generate OTP (always string)
+    const otp = generateOTP().toString();
 
     existinguser.otp = otp;
     existinguser.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
@@ -43,7 +46,7 @@ export const login = async (req, res) => {
 
     console.log("Generated OTP:", otp);
 
-    // Development mode: return OTP instead of sending email
+    // ✅ Return OTP (DEV mode)
     return res.status(200).json({
       success: true,
       message: "OTP generated successfully",
@@ -56,7 +59,7 @@ export const login = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Server error",
     });
   }
 };
@@ -65,6 +68,22 @@ export const login = async (req, res) => {
 export const verifyOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
+
+    // ✅ Validate input
+    if (!userId || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "UserId and OTP are required",
+      });
+    }
+
+    // ✅ Check valid Mongo ID
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
 
     const user = await users.findById(userId);
 
@@ -75,13 +94,15 @@ export const verifyOTP = async (req, res) => {
       });
     }
 
-    if (user.otp !== otp) {
+    // ✅ FIXED OTP COMPARISON
+    if (String(user.otp) !== String(otp)) {
       return res.status(400).json({
         success: false,
         message: "Invalid OTP",
       });
     }
 
+    // ✅ Check expiry
     if (!user.otpExpiry || new Date() > user.otpExpiry) {
       return res.status(400).json({
         success: false,
@@ -89,6 +110,7 @@ export const verifyOTP = async (req, res) => {
       });
     }
 
+    // ✅ Clear OTP after success
     user.otp = "";
     user.otpExpiry = null;
 
@@ -97,14 +119,14 @@ export const verifyOTP = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Login Successful",
-      result: user,
+      user,
     });
   } catch (error) {
     console.error("VERIFY OTP ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Server error",
     });
   }
 };
@@ -113,8 +135,10 @@ export const verifyOTP = async (req, res) => {
 export const getUser = async (req, res) => {
   const { id } = req.params;
 
+  // ✅ Validate ID
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
+      success: false,
       message: "Invalid User ID",
     });
   }
@@ -124,16 +148,21 @@ export const getUser = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
+        success: false,
         message: "User not found",
       });
     }
 
-    return res.status(200).json(user);
+    return res.status(200).json({
+      success: true,
+      user,
+    });
   } catch (error) {
     console.error("Get User Error:", error);
 
     return res.status(500).json({
-      message: "Something went wrong",
+      success: false,
+      message: "Server error",
     });
   }
 };
@@ -143,32 +172,36 @@ export const updateprofile = async (req, res) => {
   const { id: _id } = req.params;
   const { channelname, description } = req.body;
 
+  // ✅ Validate ID
   if (!mongoose.Types.ObjectId.isValid(_id)) {
     return res.status(400).json({
-      message: "User unavailable...",
+      success: false,
+      message: "Invalid user ID",
     });
   }
 
   try {
-    const updatedData = await users.findByIdAndUpdate(
+    const updatedUser = await users.findByIdAndUpdate(
       _id,
       {
         $set: {
-          channelname,
-          description,
+          channelname: channelname || "",
+          description: description || "",
         },
       },
-      {
-        new: true,
-      }
+      { new: true }
     );
 
-    return res.status(200).json(updatedData);
+    return res.status(200).json({
+      success: true,
+      user: updatedUser,
+    });
   } catch (error) {
     console.error("Update error:", error);
 
     return res.status(500).json({
-      message: "Something went wrong",
+      success: false,
+      message: "Server error",
     });
   }
 };
