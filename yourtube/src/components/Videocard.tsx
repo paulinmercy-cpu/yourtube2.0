@@ -14,17 +14,30 @@ export default function Videocard({
   const [timeAgo, setTimeAgo] = useState("");
 
   useEffect(() => {
-    if (video?.createdAt) {
-      setTimeAgo(
-        formatDistanceToNow(
-          new Date(video.createdAt),
-          {
-            addSuffix: true,
-          }
-        )
+  const fetchVideos = async () => {
+    try {
+      console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/video`
       );
+
+      console.log("Status:", res.status);
+
+      const data = await res.json();
+
+      console.log("Response:", data);
+
+      setVideos(data.videos || []);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+    } finally {
+      setLoading(false);
     }
-  }, [video?.createdAt]);
+  };
+
+  fetchVideos();
+}, []);
 
   // Thumbnail URL
   const thumbnailUrl = video?.thumbnail
@@ -80,3 +93,11 @@ export default function Videocard({
     </Link>
   );
 }
+
+function setVideos(arg0: any) {
+  throw new Error("Function not implemented.");
+}
+function setLoading(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
+
