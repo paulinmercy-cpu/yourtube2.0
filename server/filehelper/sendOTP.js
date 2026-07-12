@@ -15,6 +15,8 @@ export const sendEmailOTP = async (email, otp) => {
     console.log("========== EMAIL OTP ==========");
     console.log("To:", email);
     console.log("OTP:", otp);
+    console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       throw new Error(
