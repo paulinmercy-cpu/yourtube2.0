@@ -70,7 +70,10 @@ const Comments = ({ videoId }: { videoId: string }) => {
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
         );
 
-        const data = await res.json();
+        const text = await res.text();
+console.log("SERVER RESPONSE:", text);
+
+const data = JSON.parse(text);
 
         setCity(
           data.address.city ||

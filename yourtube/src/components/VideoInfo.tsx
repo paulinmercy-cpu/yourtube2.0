@@ -63,7 +63,10 @@ const VideoInfo = ({ video }: any) => {
       }
     );
 
-    const data = await res.json();
+    const text = await res.text();
+console.log("SERVER RESPONSE:", text);
+
+const data = JSON.parse(text);
 
 console.log("Status:", res.status);
 console.log("Response:", data);
@@ -94,7 +97,10 @@ if (data.success) {
         }
       );
 
-      const data = await res.json();
+       const text = await res.text();
+console.log("SERVER RESPONSE:", text);
+
+const data = JSON.parse(text);
 
       if (data.success) {
         setLikes(data.video.likes);
@@ -136,7 +142,10 @@ if (data.success) {
       }
     );
 
-    const data = await res.json();
+    const text = await res.text();
+console.log("SERVER RESPONSE:", text);
+
+const data = JSON.parse(text);
 
     if (data.success) {
       setWatchLater(data.saved);
@@ -186,7 +195,10 @@ if (data.success) {
 }),
     });
 
-    const data = await res.json();
+    const text = await res.text();
+console.log("SERVER RESPONSE:", text);
+
+const data = JSON.parse(text);
 
     if (!data.success) {
       setShowPremiumPopup(true);

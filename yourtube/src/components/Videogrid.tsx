@@ -30,7 +30,10 @@ export default function Videogrid() {
   `${process.env.NEXT_PUBLIC_API_URL}/video`
 );
 
-        const data = await res.json();
+        const text = await res.text();
+console.log("SERVER RESPONSE:", text);
+
+const data = JSON.parse(text);
 
         setVideos(data.videos || []);
       } catch (error) {

@@ -18,7 +18,10 @@ export default function ChannelPage() {
     `${process.env.NEXT_PUBLIC_API_URL}/video`
   );
 
-      const data = await res.json();
+      const text = await res.text();
+console.log("RESPONSE:", text);
+
+const data = JSON.parse(text);
 
       const myVideos = data.videos.filter(
         (video: any) =>
