@@ -10,13 +10,14 @@ export const generateOTP = () => {
   });
 };
 
+// ================= EMAIL OTP =================
 export const sendEmailOTP = async (email, otp) => {
   try {
     console.log("========== EMAIL OTP ==========");
     console.log("To:", email);
     console.log("OTP:", otp);
     console.log("EMAIL_USER:", process.env.EMAIL_USER);
-console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+    console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       throw new Error(
@@ -25,14 +26,19 @@ console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
     }
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
     });
 
     const info = await transporter.sendMail({
@@ -41,16 +47,21 @@ console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
       subject: "YourTube Login OTP",
       text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
       html: `
-        <div style="font-family:Arial,sans-serif">
+        <div style="font-family:Arial,sans-serif;padding:20px">
           <h2>YourTube Login OTP</h2>
+
           <p>Your OTP is:</p>
-          <h1>${otp}</h1>
-          <p>This OTP is valid for 5 minutes.</p>
+
+          <h1 style="color:#2563eb;letter-spacing:4px;">
+            ${otp}
+          </h1>
+
+          <p>This OTP is valid for <b>5 minutes</b>.</p>
         </div>
       `,
     });
 
-    console.log("Email Sent");
+    console.log("Email sent successfully");
     console.log(info.messageId);
 
     return true;
@@ -60,6 +71,7 @@ console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
   }
 };
 
+// ================= MOBILE OTP =================
 export const sendMobileOTP = async (phone, otp) => {
   console.log("========== MOBILE OTP ==========");
   console.log("Phone:", phone);

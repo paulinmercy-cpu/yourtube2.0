@@ -129,12 +129,8 @@ export const UserProvider = ({ children }) => {
       }
 
       const otp = prompt(
-        `Enter OTP sent to ${
-          state === "Tamil Nadu"
-            ? "Email"
-            : "Mobile"
-        }`
-      );
+  `Demo OTP: ${response.data.otp}\n\nEnter OTP`
+);
 
       if (!otp) return;
 

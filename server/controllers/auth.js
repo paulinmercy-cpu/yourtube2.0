@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 import users from "../Modals/Auth.js";
-import {
-  generateOTP,
-  sendEmailOTP,
-  sendMobileOTP,
-} from "../filehelper/sendOTP.js";
+import { generateOTP } from "../filehelper/sendOTP.js";
 
 // ================= LOGIN =================
 export const login = async (req, res) => {
@@ -37,6 +33,7 @@ export const login = async (req, res) => {
       existinguser.state = state || existinguser.state;
     }
 
+    // Generate OTP
     const otp = generateOTP();
 
     existinguser.otp = otp;
@@ -46,45 +43,12 @@ export const login = async (req, res) => {
 
     console.log("Generated OTP:", otp);
 
-    const southStates = [
-      "Tamil Nadu",
-      "Kerala",
-      "Karnataka",
-      "Andhra Pradesh",
-      "Telangana",
-    ];
-
-    try {
-      if (southStates.includes(existinguser.state)) {
-        console.log("Sending OTP to EMAIL:", existinguser.email);
-
-        await sendEmailOTP(existinguser.email, otp);
-      } else {
-        console.log("Sending OTP to MOBILE:", existinguser.phone);
-
-        if (!existinguser.phone) {
-          return res.status(400).json({
-            success: false,
-            message: "Phone number is required",
-          });
-        }
-
-        await sendMobileOTP(existinguser.phone, otp);
-      }
-    } catch (otpError) {
-      console.error("OTP Sending Error:", otpError);
-
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send OTP",
-        error: otpError.message,
-      });
-    }
-
+    // Development mode: return OTP instead of sending email
     return res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      message: "OTP generated successfully",
       userId: existinguser._id,
+      otp,
       state: existinguser.state,
     });
   } catch (error) {
@@ -96,6 +60,7 @@ export const login = async (req, res) => {
     });
   }
 };
+
 // ================= VERIFY OTP =================
 export const verifyOTP = async (req, res) => {
   try {
