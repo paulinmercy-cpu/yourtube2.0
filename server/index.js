@@ -24,46 +24,69 @@ dotenv.config();
 
 const app = express();
 
-// ✅ FIX 1: TRUST PROXY (VERY IMPORTANT)
 app.set("trust proxy", 1);
 
+// --------------------
+// Allowed Origins
+// --------------------
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+// --------------------
+// HTTP + Socket.IO
+// --------------------
 const server = http.createServer(app);
 
-// ✅ SOCKET.IO
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "https://yourtube2-0-ankq.vercel.app",
-    ],
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
-// Socket
 socketHandler(io);
 
-// ✅ CORS
+// --------------------
+// CORS
+// --------------------
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://yourtube2-0-ankq.vercel.app",
-    ],
+    origin(origin, callback) {
+      // Allow Postman/server requests
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
 
-// ✅ BODY PARSER
+// --------------------
+// Body Parser
+// --------------------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ FIX 2: STATIC FILES (SAFE PATH)
+// --------------------
+// Static Uploads
+// --------------------
 const __dirname = path.resolve();
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ ROUTES
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
+
+// --------------------
+// API Routes
+// --------------------
 app.use("/user", userroutes);
 app.use("/video", videoroutes);
 app.use("/like", likeroutes);
@@ -75,20 +98,30 @@ app.use("/history", historyRoutes);
 app.use("/call", callRoutes);
 app.use("/watchlater", watchLaterRoutes);
 
-// ✅ ROOT
+// --------------------
+// Root Route
+// --------------------
 app.get("/", (req, res) => {
-  res.send("YouTube backend running 🚀");
+  res.send("YouTube Backend Running 🚀");
 });
 
-// ✅ MONGODB
+// --------------------
+// MongoDB
+// --------------------
 mongoose
   .connect(process.env.DB_URL)
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.error("Mongo Error:", err));
+  .then(() => {
+    console.log("✅ MongoDB Connected");
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB Error:", err);
+  });
 
-// ✅ PORT
+// --------------------
+// Start Server
+// --------------------
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
