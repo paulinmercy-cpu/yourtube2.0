@@ -6,76 +6,61 @@ interface VideoCardProps {
   video: any;
 }
 
-
 export default function Videocard({ video }: VideoCardProps) {
 
   const API_URL =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://yourtube2-0-4-j9xs.onrender.com";
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://yourtube2-0-4-j9xs.onrender.com";
 
 
-  const thumbnailUrl = video?.thumbnail
-    ? `${API_URL}/uploads/${video.thumbnail}`
-    : "";
+const thumbnailUrl = video?.thumbnail
+  ? `${API_URL}/uploads/${video.thumbnail}`
+  : "";
 
 
   return (
     <Link
-      href={`/watch/${video._id}`}
+      href={`/watch/${video?._id}`}
       className="block cursor-pointer"
     >
 
       <div>
 
+        {/* Thumbnail */}
         <div className="rounded-xl overflow-hidden bg-gray-200 aspect-video">
 
-          {
-            thumbnailUrl ?
-
-            <img
-              src={thumbnailUrl}
-              alt={video?.videotitle || "thumbnail"}
-              className="w-full h-full object-cover"
-            />
-
-            :
-
-            <div className="
-              w-full h-full 
-              flex items-center justify-center 
-              text-gray-500
-            ">
-              No Thumbnail
-            </div>
-
-          }
 
         </div>
 
 
+        {/* Video Details */}
         <div className="flex gap-3 mt-3">
 
-          <div className="
-            w-9 h-9 
-            rounded-full 
-            bg-gray-300 
-            flex items-center 
-            justify-center 
-            font-medium 
-            text-black
-          ">
-            {
-              video?.videochannel
+
+          {/* Channel Avatar */}
+          <div
+            className="
+              w-9 h-9 
+              rounded-full 
+              bg-gray-300 
+              flex items-center 
+              justify-center 
+              font-medium 
+              text-black
+            "
+          >
+            {video?.videochannel
               ? video.videochannel.charAt(0).toUpperCase()
-              : "U"
-            }
+              : "U"}
           </div>
 
 
+
+          {/* Information */}
           <div className="flex-1">
 
             <h3 className="font-medium text-sm line-clamp-2">
-              {video?.videotitle}
+              {video?.videotitle || "Untitled Video"}
             </h3>
 
 
@@ -88,7 +73,9 @@ export default function Videocard({ video }: VideoCardProps) {
               {(video?.views || 0).toLocaleString()} views
             </p>
 
+
           </div>
+
 
         </div>
 
