@@ -24,27 +24,30 @@ export default function Videogrid() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const res = await fetch(
-  `${process.env.NEXT_PUBLIC_API_URL}/video`
-);
+  const fetchVideos = async () => {
+    try {
+      console.log("API:", process.env.NEXT_PUBLIC_API_URL);
 
-        const text = await res.text();
-console.log("SERVER RESPONSE:", text);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/video`
+      );
 
-const data = JSON.parse(text);
-
-        setVideos(data.videos || []);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error("Failed to fetch videos");
       }
-    };
 
-    fetchVideos();
-  }, []);
+      const data = await res.json();
+
+      setVideos(data.videos || []);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchVideos();
+}, []);
 
   const filteredVideos =
     selectedCategory === "All"

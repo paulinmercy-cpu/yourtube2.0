@@ -61,32 +61,42 @@ const Comments = ({ videoId }: { videoId: string }) => {
     }
   }, [videoId]);
   useEffect(() => {
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      try {
-        const { latitude, longitude } = position.coords;
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    try {
+      const { latitude, longitude } = position.coords;
 
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-        );
+      // 🌍 GEO API
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+      );
 
-        const text = await res.text();
-console.log("SERVER RESPONSE:", text);
+      const geoData = await geoRes.json();
 
-const data = JSON.parse(text);
+      setCity(
+        geoData.address?.city ||
+        geoData.address?.town ||
+        geoData.address?.village ||
+        "Unknown"
+      );
 
-        setCity(
-          data.address.city ||
-            data.address.town ||
-            data.address.village ||
-            "Unknown"
-        );
-      } catch (error) {
-        console.log(error);
+      // 🎬 YOUR API
+      const apiRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/video/${videoId}`
+      );
+
+      if (!apiRes.ok) {
+        throw new Error("Failed to fetch video");
       }
+
+      const data = await apiRes.json();
+
+      console.log("Video:", data);
+
+    } catch (err) {
+      console.error(err);
     }
-  );
-}, []);
+  });
+}, [videoId]);
 
   // ✅ ADD COMMENT
   const handleAddComment = async () => {

@@ -15,6 +15,17 @@ export default function WatchVideo() {
   const [video, setVideo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ helper (same pattern everywhere)
+  const fetchJSON = async (url: string) => {
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      throw new Error(`Failed: ${res.status}`);
+    }
+
+    return res.json();
+  };
+
   useEffect(() => {
     if (!id) return;
 
@@ -22,14 +33,11 @@ export default function WatchVideo() {
       try {
         setLoading(true);
 
-        const res = await fetch(
+        console.log("API:", process.env.NEXT_PUBLIC_API_URL);
+
+        const data = await fetchJSON(
           `${process.env.NEXT_PUBLIC_API_URL}/video/${id}`
         );
-
-        const text = await res.text();
-console.log("SERVER RESPONSE:", text);
-
-const data = JSON.parse(text);
 
         if (data.success) {
           setVideo(data.video);
@@ -37,7 +45,7 @@ const data = JSON.parse(text);
           setVideo(null);
         }
       } catch (err) {
-        console.error(err);
+        console.error("FETCH VIDEO ERROR:", err);
         setVideo(null);
       } finally {
         setLoading(false);
@@ -47,6 +55,7 @@ const data = JSON.parse(text);
     fetchVideo();
   }, [id]);
 
+  // UI STATES
   if (!id) {
     return <div className="p-6 text-center">Loading...</div>;
   }
@@ -56,7 +65,11 @@ const data = JSON.parse(text);
   }
 
   if (!video) {
-    return <div className="p-6 text-center">Video not found</div>;
+    return (
+      <div className="p-6 text-center">
+        ❌ Video not found
+      </div>
+    );
   }
 
   return (
@@ -64,6 +77,7 @@ const data = JSON.parse(text);
       <div className="max-w-7xl mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+          {/* LEFT */}
           <div className="lg:col-span-2">
             <Videoplayer
               video={video}
@@ -74,6 +88,7 @@ const data = JSON.parse(text);
             <Comments videoId={video._id} />
           </div>
 
+          {/* RIGHT */}
           <div>
             <RelatedVideos currentVideoId={video._id} />
           </div>
