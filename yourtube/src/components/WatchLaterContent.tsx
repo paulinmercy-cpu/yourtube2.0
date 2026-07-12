@@ -39,8 +39,8 @@ export default function WatchLaterContent() {
       }
 
       const response = await fetch(
-        `http://localhost:5000/watchlater/${user._id}`
-      );
+  `${process.env.NEXT_PUBLIC_API_URL}/watchlater/${user._id}`
+);
 
       const data = await response.json();
 
@@ -104,10 +104,10 @@ export default function WatchLaterContent() {
               <Link href={`/watch/${item.videoId._id}`}>
                 <img
   src={
-    item.videoId.thumbnail
-      ? `http://localhost:5000/uploads/${item.videoId.thumbnail}`
-      : "/thumbnail.jpg"
-  }
+  item.videoId.thumbnail
+    ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/${item.videoId.thumbnail}`
+    : "/thumbnail.jpg"
+}
   className="w-[220px] h-[130px] rounded-xl object-cover"
   alt={item.videoId.videotitle}
 />

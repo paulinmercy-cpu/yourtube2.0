@@ -27,8 +27,8 @@ export default function Videogrid() {
     const fetchVideos = async () => {
       try {
         const res = await fetch(
-          "http://localhost:5000/video"
-        );
+  `${process.env.NEXT_PUBLIC_API_URL}/video`
+);
 
         const data = await res.json();
 

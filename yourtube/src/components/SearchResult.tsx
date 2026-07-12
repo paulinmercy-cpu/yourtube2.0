@@ -35,8 +35,8 @@ export default function SearchResult({
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/video"
-      );
+  `${process.env.NEXT_PUBLIC_API_URL}/video`
+);
 
       const data = await response.json();
 
@@ -101,10 +101,10 @@ export default function SearchResult({
           <div className="relative flex-shrink-0">
             <img
               src={
-                video.thumbnail
-                  ? `http://localhost:5000/uploads/${video.thumbnail}`
-                  : "/thumbnail.jpg"
-              }
+  video.thumbnail
+    ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/${video.thumbnail}`
+    : "/thumbnail.jpg"
+}
               alt={video.videotitle}
               className="w-full md:w-[360px] h-[200px] object-cover rounded-xl"
             />

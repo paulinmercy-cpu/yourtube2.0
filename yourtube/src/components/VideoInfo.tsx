@@ -51,7 +51,7 @@ const VideoInfo = ({ video }: any) => {
     }
 
     const res = await fetch(
-      `http://localhost:5000/like/like/${video._id}`,
+  `${process.env.NEXT_PUBLIC_API_URL}/like/like/${video._id}`,
       {
         method: "POST",
         headers: {
@@ -88,7 +88,7 @@ if (data.success) {
   const handleDislike = async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/video/${video._id}/dislike`,
+  `${process.env.NEXT_PUBLIC_API_URL}/video/${video._id}/dislike`,
         {
           method: "PUT",
         }
@@ -124,7 +124,7 @@ if (data.success) {
     }
 
     const res = await fetch(
-      `http://localhost:5000/watchlater/${video._id}`,
+  `${process.env.NEXT_PUBLIC_API_URL}/watchlater/${video._id}`,
       {
         method: "POST",
         headers: {
@@ -169,7 +169,8 @@ if (data.success) {
     
 
 
-    const res = await fetch("http://localhost:5000/download", {
+    const res = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/download`,{
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -195,8 +196,7 @@ if (data.success) {
       return;
     }
 
-    const fileUrl = `http://localhost:5000/download/file/${video?.filename}`;
-
+    const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/download/file/${video?.filename}`;
     const link = document.createElement("a");
     link.href = fileUrl;
     link.download = video?.videotitle || "video.mp4";

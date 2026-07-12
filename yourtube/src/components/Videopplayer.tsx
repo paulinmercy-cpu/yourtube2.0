@@ -25,8 +25,8 @@ const Videoplayer = ({
   >(null);
 
   const videoSrc = video?.filename
-    ? `http://localhost:5000/uploads/${video.filename}`
-    : null;
+  ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/${video.filename}`
+  : null;
 
   const user =
     typeof window !== "undefined"
@@ -147,11 +147,11 @@ const Videoplayer = ({
 
       try {
         await fetch(
-          `http://localhost:5000/video/${videoId}/view`,
-          {
-            method: "PUT",
-          }
-        );
+  `${process.env.NEXT_PUBLIC_API_URL}/video/${videoId}/view`,
+  {
+    method: "PUT",
+  }
+);
 
         console.log("View counted");
       } catch (err) {
@@ -195,7 +195,7 @@ useEffect(() => {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/history",
+  `${process.env.NEXT_PUBLIC_API_URL}/history`,
         {
           method: "POST",
           headers: {

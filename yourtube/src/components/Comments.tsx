@@ -196,12 +196,12 @@ const Comments = ({ videoId }: { videoId: string }) => {
 ) => {
   try {
     const res = await axiosInstance.post(
-      "http://localhost:5000/translate",
-      {
-        text,
-        targetLanguage,
-      }
-    );
+  "/translate",
+  {
+    text,
+    targetLanguage,
+  }
+);
 
     if (res.data.success) {
       setTranslatedComments((prev) => ({

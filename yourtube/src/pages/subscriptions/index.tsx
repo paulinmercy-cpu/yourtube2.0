@@ -55,13 +55,12 @@ const handleUpgrade = async (plan: string) => {
     );
 
     const res = await axios.put(
-      "http://localhost:5000/premium/upgrade",
-      {
-        userId: currentUser._id,
-        plan,
-      }
-    );
-
+  `${process.env.NEXT_PUBLIC_API_URL}/premium/upgrade`,
+  {
+    userId: currentUser._id,
+    plan,
+  }
+);
     if (res.data.success) {
       localStorage.setItem(
         "user",

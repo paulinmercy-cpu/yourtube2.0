@@ -39,7 +39,7 @@ export default function HistoryContent() {
   const loadHistory = async () => {
     try {
       const response = await fetch(
-  `http://localhost:5000/history/${user._id}`
+  `${process.env.NEXT_PUBLIC_API_URL}/history/${user._id}`
 );
 
 const data = await response.json();
@@ -58,11 +58,10 @@ console.log("HISTORY RESPONSE:", data);
   };
 
   const removeHistory = async (id: string) => {
-    try {
-      await fetch(`http://localhost:5000/history/${id}`, {
-        method: "DELETE",
-      });
-
+   try {
+  await fetch(`${process.env.NEXT_PUBLIC_API_URL}/history/${id}`, {
+    method: "DELETE",
+  });
       setHistory((prev) =>
         prev.filter((item) => item._id !== id)
       );
@@ -74,11 +73,11 @@ console.log("HISTORY RESPONSE:", data);
   const clearHistory = async () => {
     try {
       await fetch(
-        `http://localhost:5000/history/clear/${user._id}`,
-        {
-          method: "DELETE",
-        }
-      );
+  `${process.env.NEXT_PUBLIC_API_URL}/history/clear/${user._id}`,
+  {
+    method: "DELETE",
+  }
+);
 
       setHistory([]);
     } catch (error) {
@@ -143,12 +142,12 @@ console.log("HISTORY RESPONSE:", data);
               <Link href={`/watch/${item.videoId._id}`}>
                 <img
                   src={
-                    item.videoId.thumbnail
-                      ? item.videoId.thumbnail.startsWith("http")
-                        ? item.videoId.thumbnail
-                        : `http://localhost:5000/uploads/${item.videoId.thumbnail}`
-                      : "/thumbnail.jpg"
-                  }
+  item.videoId.thumbnail
+    ? item.videoId.thumbnail.startsWith("http")
+      ? item.videoId.thumbnail
+      : `${process.env.NEXT_PUBLIC_API_URL}/uploads/${item.videoId.thumbnail}`
+    : "/thumbnail.jpg"
+}
                   className="w-[220px] h-[124px] rounded-xl object-cover"
                   alt={item.videoId.videotitle}
                 />

@@ -109,11 +109,11 @@ export const getVideos = async (req, res) => {
     const videosWithUrls = videos.map((video) => ({
       ...video._doc,
 
-      videoUrl: `http://localhost:5000/uploads/${video.filename}`,
+      videoUrl: `${process.env.BASE_URL}/uploads/${video.filename}`,
 
       thumbnailUrl: video.thumbnail
-        ? `http://localhost:5000/uploads/${video.thumbnail}`
-        : "",
+  ? `${process.env.BASE_URL}/uploads/${video.thumbnail}`
+  : "",
     }));
 
     res.status(200).json({
@@ -147,10 +147,10 @@ export const getVideoById = async (req, res) => {
       success: true,
       video: {
         ...video._doc,
-        videoUrl: `http://localhost:5000/uploads/${video.filename}`,
+        videoUrl: `${process.env.BASE_URL}/uploads/${video.filename}`,
         thumbnailUrl: video.thumbnail
-          ? `http://localhost:5000/uploads/${video.thumbnail}`
-          : "",
+  ? `${process.env.BASE_URL}/uploads/${video.thumbnail}`
+  : "",
       },
     });
   } catch (error) {

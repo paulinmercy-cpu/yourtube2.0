@@ -28,8 +28,8 @@ export default function Videocard({
 
   // Thumbnail URL
   const thumbnailUrl = video?.thumbnail
-    ? `http://localhost:5000/uploads/${video.thumbnail}`
-    : "";
+  ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/${video.thumbnail}`
+  : "";
 
   return (
     <Link

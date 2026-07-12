@@ -31,7 +31,7 @@ if (!router.isReady) {
       setLoading(true);
 
       const response = await fetch(
-        `http://localhost:5000/video/${id}`
+        `${process.env.NEXT_PUBLIC_API_URL}/video/${id}`
       );
 
       const data = await response.json();

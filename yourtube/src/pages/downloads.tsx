@@ -45,8 +45,8 @@ console.log("User ID:", currentUser._id);
       }
 
       const res = await axios.get(
-        `http://localhost:5000/download/${currentUser._id}`
-      );
+  `${process.env.NEXT_PUBLIC_API_URL}/download/${currentUser._id}`
+);
 
       setDownloads(res.data.downloads || []);
     } catch (err) {
@@ -212,7 +212,7 @@ console.log("User ID:", currentUser._id);
                       </Link>
 
                       <a
-  href={`http://localhost:5000/download/file/${encodeURIComponent(video.videoUrl)}`}
+ href={`${process.env.NEXT_PUBLIC_API_URL}/download/file/${encodeURIComponent(video.videoUrl)}`}
   download
   className="flex items-center gap-2 border border-gray-300 hover:bg-gray-100 px-5 py-3 rounded-full transition"
 >

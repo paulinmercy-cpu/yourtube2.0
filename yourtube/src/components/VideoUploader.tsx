@@ -95,8 +95,8 @@ export default function VideoUploader({
       formData.append("category", "Entertainment");
       formData.append("uploader", "Paulin Mercy");
 
-      const response = await fetch(
-        "http://localhost:5000/video/upload",
+     const response = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/video/upload`,
         {
           method: "POST",
           body: formData,
