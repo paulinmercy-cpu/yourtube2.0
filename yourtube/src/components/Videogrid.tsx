@@ -19,14 +19,11 @@ const categories = [
 
 export default function Videogrid() {
 
-  const [selectedCategory, setSelectedCategory] =
-    useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const [videos, setVideos] =
-    useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
 
 
@@ -48,13 +45,7 @@ export default function Videogrid() {
 
 
         const res = await fetch(
-          `${API_URL}/video`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
+          `${API_URL}/video`
         );
 
 
@@ -76,34 +67,28 @@ export default function Videogrid() {
         );
 
 
-        // Handles both API formats
         if (Array.isArray(data)) {
 
           setVideos(data);
 
-        } 
-        else {
+        } else {
 
           setVideos(
-            data.videos || []
+            data?.videos || []
           );
 
         }
 
 
-
-      } 
-        
-      catch(error) {
+      } catch(error) {
 
         console.error(
           "Unable to connect to server:",
           error
         );
 
-      }
 
-      finally {
+      } finally {
 
         setLoading(false);
 
@@ -122,13 +107,12 @@ export default function Videogrid() {
 
   const filteredVideos =
     selectedCategory === "All"
-
       ? videos
-
       : videos.filter(
           (video) =>
-            video.category === selectedCategory
+            video?.category === selectedCategory
         );
+
 
 
 
@@ -150,71 +134,89 @@ export default function Videogrid() {
     <div className="p-6">
 
 
-      <div className="
-        flex gap-3 
-        overflow-x-auto 
-        mb-6
-      ">
+      {/* Categories */}
 
-        {
-          categories.map((category)=>(
+      <div
+        className="
+          flex gap-3
+          overflow-x-auto
+          mb-6
+        "
+      >
 
-            <button
+        {categories.map((category) => (
 
-              key={category}
+          <button
 
-              onClick={() =>
-                setSelectedCategory(category)
-              }
+            key={category}
 
-              className={`
-                px-4 py-2 rounded-lg 
-                whitespace-nowrap
-                ${
-                  selectedCategory === category
+            onClick={() =>
+              setSelectedCategory(category)
+            }
+
+            className={`
+              px-4 py-2
+              rounded-lg
+              whitespace-nowrap
+              ${
+                selectedCategory === category
                   ? "bg-black text-white"
                   : "bg-gray-100 hover:bg-gray-200"
-                }
-              `}
+              }
+            `}
 
-            >
+          >
 
-              {category}
+            {category}
 
-            </button>
+          </button>
 
-          ))
-        }
+        ))}
 
       </div>
 
 
 
 
-      <div className="
-        grid 
-        grid-cols-1 
-        md:grid-cols-2 
-        lg:grid-cols-3 
-        gap-6
-      ">
 
-        {
-          filteredVideos.map((video)=>(
+      {/* Video Grid */}
+
+      {filteredVideos.length > 0 ? (
+
+        <div
+          className="
+            grid
+            grid-cols-1
+            md:grid-cols-2
+            lg:grid-cols-3
+            gap-6
+          "
+        >
+
+          {filteredVideos.map((video) => (
 
             <Videocard
 
-              key={video._id}
+              key={video?._id}
 
               video={video}
 
             />
 
-          ))
-        }
+          ))}
+
+        </div>
 
 
-      </div>
+      ) : (
+
+        <div className="text-center p-10 text-gray-500">
+
+          No videos found
+
+        </div>
+
+      )}
 
 
     </div>
