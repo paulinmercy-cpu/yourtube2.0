@@ -3,13 +3,8 @@ import ffmpeg from "fluent-ffmpeg";
 import path from "path";
 import fs from "fs";
 
-ffmpeg.setFfmpegPath(
-  "C:\\Users\\pauli\\OneDrive\\Documents\\you\\ffmpeg-8.1.2-essentials_build\\ffmpeg-8.1.2-essentials_build\\bin\\ffmpeg.exe"
-);
-
-ffmpeg.setFfprobePath(
-  "C:\\Users\\pauli\\OneDrive\\Documents\\you\\ffmpeg-8.1.2-essentials_build\\ffmpeg-8.1.2-essentials_build\\bin\\ffprobe.exe"
-);
+ffmpeg.setFfmpegPath("ffmpeg");
+ffmpeg.setFfprobePath("ffprobe");
 // ================= UPLOAD VIDEO =================
 export const uploadVideo = async (req, res) => {
   try {
@@ -90,13 +85,13 @@ await new Promise((resolve, reject) => {
       video: savedVideo,
     });
   } catch (error) {
-    console.error("UPLOAD ERROR:", error);
+  console.error("UPLOAD ERROR FULL:", error); // ADD THIS
 
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+  res.status(500).json({
+    success: false,
+    message: error.message,
+  });
+}
 };
 
 // ================= GET ALL VIDEOS =================
@@ -106,14 +101,16 @@ export const getVideos = async (req, res) => {
       createdAt: -1,
     });
 
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     const videosWithUrls = videos.map((video) => ({
       ...video._doc,
 
-      videoUrl: `${process.env.BASE_URL}/uploads/${video.filename}`,
+      videoUrl: `${baseUrl}/uploads/${video.filename}`,
 
       thumbnailUrl: video.thumbnail
-  ? `${process.env.BASE_URL}/uploads/${video.thumbnail}`
-  : "",
+        ? `${baseUrl}/uploads/${video.thumbnail}`
+        : "",
     }));
 
     res.status(200).json({
@@ -122,12 +119,8 @@ export const getVideos = async (req, res) => {
       videos: videosWithUrls,
     });
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.log(error);
+    res.status(500).json({ success: false });
   }
 };
 
@@ -143,18 +136,22 @@ export const getVideoById = async (req, res) => {
       });
     }
 
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://yourtube2-0-3-15aa.onrender.com";
+
     res.status(200).json({
       success: true,
       video: {
         ...video._doc,
-        videoUrl: `${process.env.BASE_URL}/uploads/${video.filename}`,
+        videoUrl: `${baseUrl}/uploads/${video.filename}`,
         thumbnailUrl: video.thumbnail
-  ? `${process.env.BASE_URL}/uploads/${video.thumbnail}`
-  : "",
+          ? `${baseUrl}/uploads/${video.thumbnail}`
+          : "",
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("GET VIDEO ERROR:", error);
 
     res.status(500).json({
       success: false,
