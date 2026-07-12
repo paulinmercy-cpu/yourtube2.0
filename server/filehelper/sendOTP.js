@@ -12,14 +12,15 @@ export const generateOTP = () => {
 
 export const sendEmailOTP = async (email, otp) => {
   try {
-    console.log("============== EMAIL OTP ==============");
-    console.log("EMAIL_USER:", process.env.EMAIL_USER);
-    console.log(
-      "EMAIL_PASS:",
-      process.env.EMAIL_PASS ? "Loaded" : "Not Loaded"
-    );
-    console.log("Sending OTP to:", email);
+    console.log("========== EMAIL OTP ==========");
+    console.log("To:", email);
     console.log("OTP:", otp);
+
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error(
+        "EMAIL_USER or EMAIL_PASS environment variable is missing."
+      );
+    }
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -27,54 +28,41 @@ export const sendEmailOTP = async (email, otp) => {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
-
-    // Verify SMTP connection
-    await transporter.verify();
-    console.log("SMTP Server Connected Successfully");
 
     const info = await transporter.sendMail({
       from: `"YourTube" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "YourTube Login OTP",
-      text: `Your OTP is ${otp}. This OTP is valid for 5 minutes.`,
+      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
       html: `
-        <div style="font-family: Arial, sans-serif; padding:20px">
+        <div style="font-family:Arial,sans-serif">
           <h2>YourTube Login OTP</h2>
-          <p>Your One-Time Password is:</p>
-
-          <h1 style="
-            color:#2563eb;
-            letter-spacing:5px;
-            font-size:36px;
-          ">
-            ${otp}
-          </h1>
-
-          <p>This OTP is valid for <b>5 minutes</b>.</p>
-
-          <p>If you didn't request this OTP, please ignore this email.</p>
+          <p>Your OTP is:</p>
+          <h1>${otp}</h1>
+          <p>This OTP is valid for 5 minutes.</p>
         </div>
       `,
     });
 
-    console.log("Email sent successfully");
-    console.log("Message ID:", info.messageId);
-    console.log("Response:", info.response);
-    console.log("=======================================");
+    console.log("Email Sent");
+    console.log(info.messageId);
+
+    return true;
   } catch (error) {
-    console.error("EMAIL SEND ERROR");
-    console.error(error);
+    console.error("Email Error:", error.message);
     throw error;
   }
 };
 
 export const sendMobileOTP = async (phone, otp) => {
-  console.log("============== MOBILE OTP ==============");
-  console.log(`Phone: ${phone}`);
-  console.log(`OTP: ${otp}`);
+  console.log("========== MOBILE OTP ==========");
+  console.log("Phone:", phone);
+  console.log("OTP:", otp);
 
-  // Replace this with Twilio later
-  console.log("SMS OTP sent successfully (Mock)");
-  console.log("========================================");
+  // Mock SMS
+  return true;
 };

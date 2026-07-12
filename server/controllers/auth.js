@@ -22,7 +22,6 @@ export const login = async (req, res) => {
 
     let existinguser = await users.findOne({ email });
 
-    // Create new user
     if (!existinguser) {
       existinguser = await users.create({
         email,
@@ -32,21 +31,11 @@ export const login = async (req, res) => {
         state,
       });
     } else {
-      // Update user details
       existinguser.name = name || existinguser.name;
       existinguser.image = image || existinguser.image;
       existinguser.phone = phone || existinguser.phone;
       existinguser.state = state || existinguser.state;
     }
-
-    // ================= OTP =================
-    const southStates = [
-      "Tamil Nadu",
-      "Kerala",
-      "Karnataka",
-      "Andhra Pradesh",
-      "Telangana",
-    ];
 
     const otp = generateOTP();
 
@@ -55,14 +44,33 @@ export const login = async (req, res) => {
 
     await existinguser.save();
 
-    if (southStates.includes(existinguser.state)) {
-      console.log("Sending OTP to EMAIL");
+    console.log("Generated OTP:", otp);
 
-      await sendEmailOTP(existinguser.email, otp);
-    } else {
-      console.log("Sending OTP to MOBILE");
+    const southStates = [
+      "Tamil Nadu",
+      "Kerala",
+      "Karnataka",
+      "Andhra Pradesh",
+      "Telangana",
+    ];
 
-      await sendMobileOTP(existinguser.phone, otp);
+    try {
+      console.log("OTP:", otp);
+
+return res.status(200).json({
+  success: true,
+  message: "OTP generated",
+  userId: existinguser._id,
+  otp,
+  state: existinguser.state,
+});
+    } catch (otpError) {
+      console.error("OTP Sending Error:", otpError);
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP",
+      });
     }
 
     return res.status(200).json({
@@ -72,7 +80,7 @@ export const login = async (req, res) => {
       state: existinguser.state,
     });
   } catch (error) {
-    console.error("LOGIN CONTROLLER ERROR:", error);
+    console.error("LOGIN ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -80,6 +88,62 @@ export const login = async (req, res) => {
     });
   }
 };
+
+    // ================= OTP =================
+    const southStates = [
+  "Tamil Nadu",
+  "Kerala",
+  "Karnataka",
+  "Andhra Pradesh",
+  "Telangana",
+];
+
+// Generate OTP
+const otp = generateOTP();
+
+console.log("Generated OTP:", otp);
+
+// Save OTP
+existinguser.otp = otp;
+existinguser.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+await existinguser.save();
+
+// Send OTP
+try {
+  if (southStates.includes(existinguser.state)) {
+    console.log("Sending OTP to EMAIL:", existinguser.email);
+
+    await sendEmailOTP(existinguser.email, otp);
+  } else {
+    console.log("Sending OTP to MOBILE:", existinguser.phone);
+
+    if (!existinguser.phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required for mobile OTP",
+      });
+    }
+
+    await sendMobileOTP(existinguser.phone, otp);
+  }
+} catch (otpError) {
+  console.error("OTP Sending Error:", otpError);
+
+  return res.status(500).json({
+    success: false,
+    message: "Failed to send OTP",
+    error: otpError.message,
+  });
+}
+
+// Success Response
+return res.status(200).json({
+  success: true,
+  message: "OTP sent successfully",
+  userId: existinguser._id,
+  state: existinguser.state,
+});
 
 // ================= VERIFY OTP =================
 export const verifyOTP = async (req, res) => {

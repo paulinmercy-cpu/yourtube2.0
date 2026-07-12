@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter, usePathname } from "next/navigation";
 
 import {
   Menu,
@@ -35,7 +35,7 @@ import { Useuser } from "@/lib/AuthContext";
 
 const Header = () => {
   const router = useRouter();
-const pathname = router.pathname;
+const pathname = usePathname();
   const context: any = Useuser();
 
   const [searchQuery, setSearchQuery] = useState("");

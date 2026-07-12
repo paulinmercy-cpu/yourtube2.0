@@ -12,13 +12,12 @@ import {
   useEffect,
   useState,
 } from "react";
-import { getThemeByLocation } from "./theme";
+
 import { auth, provider } from "./firebase";
+import { getThemeByLocation } from "./theme";
 import axiosInstance from "./axiosinstance";
 
-
 const UserContext = createContext(null);
-
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -31,22 +30,19 @@ export const UserProvider = ({ children }) => {
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser));
-        } catch (error) {
-          console.log(error);
+        } catch (err) {
+          console.error(err);
         }
       }
     }
   }, []);
 
-  // Save user
+  // Login
   const login = (userdata) => {
     setUser(userdata);
 
     if (typeof window !== "undefined") {
-      localStorage.setItem(
-        "user",
-        JSON.stringify(userdata)
-      );
+      localStorage.setItem("user", JSON.stringify(userdata));
     }
   };
 
@@ -57,77 +53,83 @@ export const UserProvider = ({ children }) => {
 
       setUser(null);
 
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("user");
-      }
-    } catch (error) {
-      console.error("Logout Error:", error);
+      localStorage.removeItem("user");
+    } catch (err) {
+      console.error(err);
     }
   };
 
+  // Get user state
   const getUserState = async () => {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve("");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          );
-
-          const data = await response.json();
-
-          resolve(data.address.state || "");
-        } catch (error) {
-          console.error(error);
-          resolve("");
-        }
-      },
-      () => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
         resolve("");
+        return;
       }
-    );
-  });
-};
 
+      navigator.geolocation.getCurrentPosition(
+        async ({ coords }) => {
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}`
+            );
 
-  // Google Sign In
+            const data = await response.json();
+
+            resolve(data.address.state || "");
+          } catch (err) {
+            console.error(err);
+            resolve("");
+          }
+        },
+        () => resolve("")
+      );
+    });
+  };
+
+  // Google Login
   const handlegooglesignin = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
+    try {
+      console.log(
+        "API URL:",
+        process.env.NEXT_PUBLIC_API_URL
+      );
 
-    const firebaseuser = result.user;
-    const state = await getUserState();
+      const result = await signInWithPopup(auth, provider);
 
-    const payload = {
-      email: firebaseuser.email,
-      name: firebaseuser.displayName,
-      image:
-        firebaseuser.photoURL ||
-        "https://github.com/shadcn.png",
-      state,
-      phone: "",
-    };
+      const firebaseuser = result.user;
 
-    console.log("Payload:", payload);
+      const state = await getUserState();
 
-    // Send OTP
-    const response = await axiosInstance.post(
-      "/user/login",
-      payload
-    );
+      const payload = {
+        email: firebaseuser.email,
+        name: firebaseuser.displayName,
+        image:
+          firebaseuser.photoURL ||
+          "https://github.com/shadcn.png",
+        state,
+        phone: "",
+      };
 
-    console.log(response.data);
+      console.log("Sending Payload:", payload);
 
-    if (response.data.success) {
+      const response = await axiosInstance.post(
+        "/user/login",
+        payload,
+        {
+          timeout: 30000,
+        }
+      );
+
+      console.log("Backend Response:", response.data);
+
+      if (!response.data.success) {
+        alert(response.data.message);
+        return;
+      }
+
       const otp = prompt(
-        `Enter OTP sent to your ${
+        `Enter OTP sent to ${
           state === "Tamil Nadu"
             ? "Email"
             : "Mobile"
@@ -142,59 +144,77 @@ export const UserProvider = ({ children }) => {
           {
             userId: response.data.userId,
             otp,
+          },
+          {
+            timeout: 30000,
           }
         );
 
-      if (verifyResponse.data.success) {
-        const userdata =
-          verifyResponse.data.result;
+      console.log(
+        "Verify Response:",
+        verifyResponse.data
+      );
 
-        const theme = getThemeByLocation(
-          userdata.state
-        );
-
-        console.log("State:", userdata.state);
-        console.log("Theme:", theme);
-
-        localStorage.setItem(
-          "theme",
-          theme
-        );
-
-        document.documentElement.classList.remove(
-          "light",
-          "dark"
-        );
-
-        document.documentElement.classList.add(
-          theme
-        );
-
-        login(userdata);
-
-        alert("Login Successful");
-      } else {
+      if (!verifyResponse.data.success) {
         alert("Invalid OTP");
+        return;
       }
-    }
-  } catch (error) {
-    console.error(
-      "Google Login Error:",
-      error.response?.data || error
-    );
-  }
-};
 
-  // Firebase auth listener
+      const userdata = verifyResponse.data.result;
+
+      const theme = getThemeByLocation(
+        userdata.state
+      );
+
+      localStorage.setItem("theme", theme);
+
+      document.documentElement.classList.remove(
+        "light",
+        "dark"
+      );
+
+      document.documentElement.classList.add(
+        theme
+      );
+
+      login(userdata);
+
+      alert("Login Successful");
+    } catch (error) {
+      if (error.response) {
+        console.error(
+          "Response Error:",
+          error.response.data
+        );
+      } else if (error.request) {
+        console.error(
+          "No Response:",
+          error.request
+        );
+      } else {
+        console.error(error.message);
+      }
+
+      console.error(error);
+
+      alert(
+        "Unable to connect to the server. Check Render and API URL."
+      );
+    }
+  };
+
   useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (firebaseuser) => {
-    if (!firebaseuser) {
-      setUser(null);
-    }
-  });
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (firebaseuser) => {
+        if (!firebaseuser) {
+          setUser(null);
+        }
+      }
+    );
 
-  return () => unsubscribe();
-}, []);
+    return () => unsubscribe();
+  }, []);
 
   return (
     <UserContext.Provider
@@ -210,8 +230,6 @@ export const UserProvider = ({ children }) => {
   );
 };
 
-export const Useuser = () => {
-  return useContext(UserContext);
-};
+export const Useuser = () => useContext(UserContext);
 
 export default UserContext;
